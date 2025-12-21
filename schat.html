@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatApp - Real-Time Messaging</title>
+  <!-- Add Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Add Toast Notification CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <!-- Link to external CSS -->
+  <link rel="stylesheet" href="schat.css">
+</head>
+<body>
+  <!-- Taskbar Notification -->
+  <div id="taskbar-notification" class="taskbar-notification">
+    <i class="fas fa-comment-alt"></i>
+    <span id="notification-text">New message</span>
+  </div>
+
+  <!-- Request Notification -->
+  <div id="request-notification" class="request-notification">
+    <h4>New Message Request</h4>
+    <p id="request-notification-text"></p>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="viewMessageRequest()" style="flex:1; padding: 5px; background: white; color: var(--request-color); border: none; border-radius: 4px; cursor: pointer;">View</button>
+      <button onclick="dismissRequestNotification()" style="padding: 5px; background: transparent; color: white; border: 1px solid white; border-radius: 4px; cursor: pointer;">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- Profile Setup Modal -->
+  <div id="profile-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">Welcome to ChatApp</h2>
+      <div class="input-group">
+        <label for="profile-name">Your Name</label>
+        <input type="text" id="profile-name" class="modal-input" placeholder="Enter your name" maxlength="20">
+      </div>
+      <div class="input-group">
+        <label for="profile-status">Status</label>
+        <input type="text" id="profile-status" class="modal-input" placeholder="How are you feeling?" maxlength="30">
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn primary" onclick="saveProfile()">Start Chatting</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy Settings Modal -->
+  <div id="privacy-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">Privacy Settings</h2>
+      <div class="privacy-options">
+        <div class="privacy-option" onclick="selectPrivacyOption('everyone')">
+          <div class="option-info">
+            <div class="option-title">Everyone</div>
+            <div class="option-description">Anyone can message you. New contacts will appear as message requests.</div>
+          </div>
+          <input type="radio" name="privacy" value="everyone" id="privacy-everyone">
+        </div>
+        
+        <div class="privacy-option" onclick="selectPrivacyOption('contacts')">
+          <div class="option-info">
+            <div class="option-title">Contacts Only</div>
+            <div class="option-description">Only people in your contacts can message you directly.</div>
+          </div>
+          <input type="radio" name="privacy" value="contacts" id="privacy-contacts">
+        </div>
+        
+        <div class="privacy-option" onclick="selectPrivacyOption('nobody')">
+          <div class="option-info">
+            <div class="option-title">Nobody</div>
+            <div class="option-description">No one can send you new message requests.</div>
+          </div>
+          <input type="radio" name="privacy" value="nobody" id="privacy-nobody">
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closePrivacyModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="savePrivacySettings()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Blocked Users Modal -->
+  <div id="blocked-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">Blocked Users</h2>
+      <div class="blocked-users-list" id="blocked-users-list">
+        <!-- Blocked users will be listed here -->
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn primary" onclick="closeBlockedModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reply/Forward Modal -->
+  <div id="message-actions-modal" class="modal-overlay">
+    <div class="modal-content forward-modal-content">
+      <h2 class="modal-title" id="message-actions-title">Forward Message</h2>
+      
+      <!-- Message Preview -->
+      <div class="reply-preview" id="forward-message-preview" style="margin-bottom: 20px;">
+        <div class="reply-preview-header">
+          <div class="reply-preview-sender" id="forward-preview-sender">Sender</div>
+        </div>
+        <div class="reply-preview-text" id="forward-preview-text">Message text...</div>
+      </div>
+      
+      <!-- Search -->
+      <div class="forward-search">
+        <input type="text" class="forward-search-input" id="forward-search-input" 
+               placeholder="Search chats..." onkeyup="filterForwardChats()">
+      </div>
+      
+      <!-- Chats List -->
+      <div class="forward-chats-list" id="forward-chats-list">
+        <!-- Chats will be populated here -->
+      </div>
+      
+      <!-- Actions -->
+      <div class="forward-actions">
+        <button class="modal-btn secondary" onclick="closeMessageActionsModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="sendForwardedMessage()" id="send-forward-btn" disabled>Forward</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Contact Modal -->
+  <div id="add-contact-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">Add New Contact</h2>
+      <div class="input-group">
+        <label for="new-contact-name">Username</label>
+        <input type="text" id="new-contact-name" class="modal-input" placeholder="Enter username" maxlength="20">
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeAddContactModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="addNewContact()">Add Contact</button>
+      </div>
+      
+      <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+        <h4 style="margin-bottom: 10px; color: var(--text-secondary);">Available Users</h4>
+        <div class="contact-list" id="available-users-list">
+          <!-- Available users will be listed here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Users Modal -->
+  <div id="search-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">Search Users</h2>
+      
+      <!-- Search Input -->
+      <div class="input-group" style="margin-bottom: 15px;">
+        <input type="text" 
+               id="search-users-input" 
+               class="modal-input" 
+               placeholder="Type to search users..."
+               onkeyup="filterSearchResults()"
+               autofocus>
+      </div>
+      
+      <!-- Search Results -->
+      <div class="search-results-container" id="search-results-container">
+        <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
+          Start typing to search users...
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeSearchModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Settings Modal -->
+  <div id="notification-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="modal-title">Notification Settings</h2>
+      
+      <div class="input-group">
+        <label style="display: flex; align-items: center; gap: 10px;">
+          <input type="checkbox" id="enable-notifications" checked>
+          <span>Enable Push Notifications</span>
+        </label>
+      </div>
+      
+      <div class="input-group">
+        <label style="display: flex; align-items: center; gap: 10px;">
+          <input type="checkbox" id="sound-notifications" checked>
+          <span>Play Sound</span>
+        </label>
+      </div>
+      
+      <div class="input-group">
+        <label style="display: flex; align-items: center; gap: 10px;">
+          <input type="checkbox" id="vibrate-notifications" checked>
+          <span>Vibrate</span>
+        </label>
+      </div>
+      
+      <div class="input-group">
+        <label>Notification Sound</label>
+        <select id="notification-sound" class="modal-input">
+          <option value="default">Default</option>
+          <option value="chime">Chime</option>
+          <option value="ding">Ding</option>
+          <option value="message">Message Tone</option>
+        </select>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeModal('notification-modal')">
+          Cancel
+        </button>
+        <button class="modal-btn primary" onclick="saveNotificationSettings()">
+          Save Settings
+        </button>
+        <button class="modal-btn" onclick="testNotification()" style="background: var(--warning-color);">
+          Test Notification
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Container -->
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <!-- Profile Section -->
+      <div class="profile-section">
+        <div class="profile-avatar" id="profile-avatar" onclick="toggleSidebar()">
+          <span id="avatar-initials">U</span>
+        </div>
+        <div class="profile-info">
+          <div class="profile-name" id="profile-display-name">User</div>
+          <div class="profile-status">
+            <span class="status-dot"></span>
+            <span id="profile-status-text">Online</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Menu -->
+      <div class="settings-menu">
+        <div class="menu-item active" onclick="showSection('chats')">
+          <i class="fas fa-comments"></i>
+          <span>Chats</span>
+        </div>
+        <div class="menu-item" onclick="showSection('requests')" id="requests-menu-item">
+          <i class="fas fa-question-circle"></i>
+          <span>Message Requests</span>
+        </div>
+        <div class="menu-item" onclick="showSection('groups')">
+          <i class="fas fa-users"></i>
+          <span>Groups</span>
+        </div>
+        <div class="menu-item" onclick="showAddContactModal()">
+          <i class="fas fa-user-plus"></i>
+          <span>Add Contact</span>
+        </div>
+        <div class="menu-item" onclick="showPrivacySettings()">
+          <i class="fas fa-shield-alt"></i>
+          <span>Privacy</span>
+        </div>
+        <div class="menu-item" onclick="showBlockedUsers()">
+          <i class="fas fa-ban"></i>
+          <span>Blocked Users</span>
+        </div>
+        <div class="menu-item" onclick="showSection('profile')">
+          <i class="fas fa-user"></i>
+          <span>Edit Profile</span>
+        </div>
+        <div class="menu-item" onclick="initiateVideoCall()">
+          <i class="fas fa-video"></i>
+          <span>Video Call</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Top Header -->
+      <div class="top-header">
+        <div class="header-left">
+          <button class="header-btn" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div>
+            <div class="header-title" id="page-title">Chats</div>
+            <div class="header-subtitle" id="page-subtitle">All your conversations</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" onclick="showSearchModal()" title="Search Users">
+            <i class="fas fa-search"></i>
+          </button>
+          <button class="header-btn" onclick="addMarkAllReadButton()" title="Refresh">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button class="header-btn" onclick="showAddContactModal()" title="Add Contact">
+            <i class="fas fa-user-plus"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cards Container -->
+      <div class="cards-container" id="cards-container">
+        <!-- Chat cards will be dynamically added here -->
+        <div class="welcome-message" id="welcome-message">
+          <p>Loading chats...</p>
+        </div>
+      </div>
+
+      <!-- Chat View (Hidden by default) -->
+      <div class="chat-view" id="chat-view">
+        <!-- Chat Header -->
+        <div class="chat-view-header">
+          <button class="chat-view-back" onclick="closeChatView()">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div class="chat-view-info">
+            <div class="profile-avatar small" id="current-chat-avatar">
+              <span id="current-chat-initials">G</span>
+            </div>
+            <div>
+              <div class="chat-view-title" id="current-chat-title">Global Chat</div>
+              <div class="chat-view-subtitle" id="current-chat-subtitle">Group • 8 members</div>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button class="header-btn" onclick="clearChat()" title="Clear Chat">
+              <i class="fas fa-trash"></i>
+            </button>
+            <button class="header-btn" onclick="initiateVideoCall()" title="Video Call">
+              <i class="fas fa-video"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="messages-container" id="messages-container">
+          <!-- Messages will be dynamically added here -->
+          <div class="welcome-message">
+            <p>Select a chat to start messaging</p>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+          <input type="text" class="message-input" id="message-input" placeholder="Type a message..." disabled>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toastify JS -->
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <!-- Link to external JavaScript -->
+  <script src="schat.js"></script>
+</body>
+</html>
