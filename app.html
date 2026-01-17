@@ -36,7 +36,7 @@
         
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-      .recording-pulse { animation: pulse-red 1.5s infinite; color: #ef4444; }
+        .recording-pulse { animation: pulse-red 1.5s infinite; color: #ef4444; }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     </style>
 </head>
@@ -373,7 +373,11 @@ async function refreshChatHistory() {
     }).join('');
 
     // Auto-scroll to latest message
-    win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+    const nearBottom =
+    win.scrollTop + win.clientHeight >= win.scrollHeight - 60;
+
+if (nearBottom) {
+    win.scrollTop = win.scrollHeight;}
 }
 
 /* --- MULTIMEDIA (VOICE & FILES) --- */
@@ -440,7 +444,7 @@ async function refreshChatHistory() {
         if (!activeContact) return;
         apiRequest('setTyping', { isTyping: true, typingTo: activeContact });
         clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => apiRequest('setTyping', { isTyping: false, typingTo: "" }), 2000);
+        typingTimer = setTimeout(() => apiRequest('setTyping', { isTyping: false, typingTo: activeContact }), 2000);
     }
 
     /* --- UPDATED STATUS LOGIC --- */
@@ -547,6 +551,7 @@ function viewStatus(email) {
 }
 
  async function openSettings() {
+    if (!currentUser || !currentUser.email) return;
     // currentUser should be set during your validateSession/login phase
     document.getElementById('settings-avatar-preview').innerHTML = getAvatarHTML(currentUser.name, currentUser.profilePic, "w-24 h-24 text-2xl");
     document.getElementById('settings-name-input').value = currentUser.name;
