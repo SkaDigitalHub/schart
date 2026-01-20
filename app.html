@@ -708,7 +708,7 @@ async function saveProfile() {
 
 /* --- HELPERS --- */
 function timeAgo(date) {
-    if (!date) return "Never";
+    if (!date) return "Offline";
     const d = new Date(date);
     if (isNaN(d.getTime())) return "Offline";
     const seconds = Math.floor((new Date() - d) / 1000);
