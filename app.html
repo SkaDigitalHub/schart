@@ -315,29 +315,7 @@ async function validate() {
     }
 }
 
-async function validate() {
-    if (!sessionToken) return;
-
-    try {
-        const res = await apiRequest('validateSession', {});
-        
-        // ONLY log out if the server explicitly says the token is invalid
-        if (res && res.success) {
-            currentUser = { email: res.email, name: res.name, profilePic: res.profilePic };
-            currentUserEmail = res.email;
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('main-chat').classList.remove('hidden');
-            startLoops();
-        } else if (res && res.error === "Invalid token") {
-            handleLogout(); 
-        } 
-        // If it's any other error, we DO NOT remove the token. 
-        // We just stay on the screen.
-    } catch (e) {
-        console.error("Validation stalled, but keeping session active.");
-    }
-}
-
+    
 /* --- CONTACTS & TYPING --- */
 async function refreshUserList() {
     const usersRes = await apiRequest('getAllUsers', {});
@@ -747,7 +725,8 @@ function showAlert(title, text, icon) {
     document.getElementById('modal-icon').innerHTML = `<i class="fas ${icon}"></i>`;
     document.getElementById('custom-modal').style.display = 'flex';
 }
-
+    
+window.onload = validate;
 </script>
 </body>
 </html>
