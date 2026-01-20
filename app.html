@@ -203,7 +203,7 @@
 </div>
 
 <script>
-   const API_URL = "https://script.google.com/macros/s/AKfycbx-trbSjVs2wQmQ58zdeMaTpacKSwR0cGWqGNLQrvzlPqCuxT_fedCJGI9es_tNd6h2/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbx-trbSjVs2wQmQ58zdeMaTpacKSwR0cGWqGNLQrvzlPqCuxT_fedCJGI9es_tNd6h2/exec"; 
 const CLOUD_NAME = "dprnytwp9";
 const UPLOAD_PRESET = "AppPortal-Chat";
 
@@ -226,34 +226,115 @@ async function apiRequest(f, d) {
 }
 
 /* --- INITIALIZATION & AUTH --- */
-window.onload = validate;
+let refreshIntervals = []; // Array to track active intervals
+
+function clearAllIntervals() {
+    refreshIntervals.forEach(id => clearInterval(id));
+    refreshIntervals = [];
+}
 
 async function handleLogin() {
     const e = document.getElementById('login-email').value, 
           p = document.getElementById('login-pass').value;
+    
     if(!e || !p) return showAlert("Enter credentials", "Please fill all fields", "fa-exclamation-circle");
 
+    const btn = document.querySelector("#auth-screen button");
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+    btn.disabled = true;
+
     const res = await apiRequest('login', { email: e, password: p });
-    if (res.success) { 
-        localStorage.setItem('chat_token', res.token); 
-        location.reload(); 
+    
+    if (res.success) {
+        // 1. Wipe browser storage and background processes
+        localStorage.clear(); 
+        clearAllIntervals(); 
+        
+        // 2. Set new session
+        localStorage.setItem('chat_token', res.token);
+        sessionToken = res.token;
+
+        // 3. Reset all variables to factory settings
+        activeContact = null;
+        lastMsgCount = 0;
+        allUsersGlobal = [];
+        currentUserEmail = null;
+        
+        // 4. Reset UI elements
+        document.getElementById('chat-window').innerHTML = '';
+        document.getElementById('user-list').innerHTML = '';
+        document.getElementById('chat-header-name').innerText = "MultiChat Pro";
+        document.getElementById('chat-header-status').innerText = "Select a contact";
+        
+        // 5. Run validation to enter app
+        await validate();
+        
+        // Reset button for next time
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     } else {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
         showAlert("Login Failed", res.error, "fa-exclamation-triangle text-red-500");
     }
 }
 
 async function validate() {
-    if (!sessionToken) return;
+    if (!sessionToken) {
+        document.getElementById('auth-screen').classList.remove('hidden');
+        return;
+    }
+    
     const res = await apiRequest('validateSession', {});
-    if (res.success) {
+    if (res && res.success) {
         currentUser = { email: res.email, name: res.name, profilePic: res.profilePic };
         currentUserEmail = res.email;
+        
         document.getElementById('active-user-avatar').innerHTML = getAvatarHTML(currentUser.name, currentUser.profilePic);
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-chat').classList.remove('hidden');
-        startLoops();
+        
+        // Start loops and save their IDs to our tracker
+        clearAllIntervals(); // Ensure no duplicates
+        refreshIntervals.push(setInterval(refreshUserList, 15000));
+        refreshIntervals.push(setInterval(refreshStatusUI, 30000));
+        refreshIntervals.push(setInterval(() => {
+            if (activeContact) {
+                refreshChatHistory();
+                updateTypingIndicator();
+            }
+        }, 3000));
+        
+        // Initial load
+        refreshUserList();
+        refreshStatusUI();
     } else {
-        localStorage.removeItem('chat_token');
+        // If validation fails (expired token), send to login
+        handleLogout();
+    }
+}
+
+async function validate() {
+    if (!sessionToken) return;
+
+    try {
+        const res = await apiRequest('validateSession', {});
+        
+        // ONLY log out if the server explicitly says the token is invalid
+        if (res && res.success) {
+            currentUser = { email: res.email, name: res.name, profilePic: res.profilePic };
+            currentUserEmail = res.email;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-chat').classList.remove('hidden');
+            startLoops();
+        } else if (res && res.error === "Invalid token") {
+            handleLogout(); 
+        } 
+        // If it's any other error, we DO NOT remove the token. 
+        // We just stay on the screen.
+    } catch (e) {
+        console.error("Validation stalled, but keeping session active.");
     }
 }
 
@@ -287,27 +368,45 @@ async function refreshUserList() {
 }
 
 function selectContact(e, n, pic) {
+    if (!e) return; // Safety check
+    
     activeContact = e; 
     lastMsgCount = 0;
     
-    // UI Updates
-    document.getElementById('chat-header-name').innerText = n;
+    // 1. UI Updates - Header
+    document.getElementById('chat-header-name').innerText = n || "Unknown Contact";
+    // Use the safe getAvatarHTML we built earlier
     document.getElementById('active-user-avatar').innerHTML = getAvatarHTML(n, pic, "w-10 h-10");
     
-    // Clear the placeholder immediately so the user knows it's loading
+    // 2. Clear Chat Window & Show Loader
     document.getElementById('chat-window').innerHTML = `
         <div class="flex-1 flex items-center justify-center text-gray-400">
-            <i class="fas fa-spinner fa-spin mr-2"></i> Loading messages...
+            <div class="text-center">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-2"></i>
+                <p class="text-xs">Loading conversation...</p>
+            </div>
         </div>`;
 
+    // 3. Robust Status Handling
     const user = allUsersGlobal.find(u => u.email === e);
-    const lastActiveDate = user?.lastActive ? new Date(user.lastActive) : null;
-    const isOnline = lastActiveDate && (new Date() - lastActiveDate) < 120000;
-    document.getElementById('chat-header-status').innerText = isOnline ? "Online" : "Last seen " + timeAgo(user?.lastActive);
+    const statusElement = document.getElementById('chat-header-status');
     
-    apiRequest('markAsRead', { contactEmail: e });
-    refreshChatHistory();
-    refreshUserList();
+    if (user && user.lastActive) {
+        const lastActiveDate = new Date(user.lastActive);
+        const isOnline = !isNaN(lastActiveDate.getTime()) && (new Date() - lastActiveDate) < 120000;
+        statusElement.innerText = isOnline ? "Online" : "Last seen " + timeAgo(user.lastActive);
+    } else {
+        statusElement.innerText = "Offline";
+    }
+    
+    // 4. API Calls with error catching to prevent Auth Screen kick
+    try {
+        apiRequest('markAsRead', { contactEmail: e }).catch(err => console.log("MarkRead failed non-fatally"));
+        refreshChatHistory();
+        refreshUserList();
+    } catch (err) {
+        console.error("Non-fatal error selecting contact:", err);
+    }
 }
 
 async function updateTypingIndicator() {
@@ -330,12 +429,25 @@ async function updateTypingIndicator() {
 }
 
 async function refreshChatHistory() {
-    if (!activeContact) return;
+    // 1. Safety check: If no contact is selected or session is missing, stop.
+    if (!activeContact || !sessionToken) return;
     
     const res = await apiRequest('getChatHistory', { contactEmail: activeContact });
-    if (!res.success) return;
     
-    // Only re-render if we have a success and either new messages or it's a first-time load
+    // 2. Resilience check: If the request failed, handle it without crashing the app.
+    if (!res || !res.success) {
+        // If the error is specifically about permissions (Unauthorized), 
+        // it means we switched users and should just clear the current view.
+        if (res.error && (res.error.includes("Unauthorized") || res.error.includes("token"))) {
+            console.warn("Session mismatch detected for this contact. Resetting view.");
+            activeContact = null;
+            document.getElementById('chat-window').innerHTML = '';
+            return;
+        }
+        return; // Exit silently for general network hiccups
+    }
+    
+    // 3. Prevent unnecessary re-renders
     if (res.messages.length === lastMsgCount && lastMsgCount !== 0) return;
     
     lastMsgCount = res.messages.length;
@@ -351,17 +463,20 @@ async function refreshChatHistory() {
         return;
     }
 
+    // 4. Render messages
     win.innerHTML = res.messages.map(m => {
         const isMe = m[1] === currentUserEmail;
         const body = m[2], 
               mime = m[5] || 'text/plain', 
-              time = new Date(m[3]).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+              // Added safety check for Date
+              msgDate = new Date(m[3]),
+              time = !isNaN(msgDate) ? msgDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--';
         
         let html = body;
         if (mime.includes('image')) html = `<img src="${body}" class="media-content cursor-pointer rounded-lg" onclick="window.open('${body}')">`;
         else if (mime.includes('video')) html = `<video controls class="media-content rounded-lg w-full"><source src="${body}"></video>`;
         else if (mime.includes('audio')) html = `<audio controls class="w-48 h-8 mt-1"><source src="${body}"></audio>`;
-        else if (body.startsWith('http')) html = `<a href="${body}" target="_blank" class="flex items-center gap-2 text-sm underline italic text-blue-600"><i class="fas fa-file-download"></i> Attachment</a>`;
+        else if (body && body.startsWith('http')) html = `<a href="${body}" target="_blank" class="flex items-center gap-2 text-sm underline italic text-blue-600"><i class="fas fa-file-download"></i> Attachment</a>`;
         
         return `
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-2">
@@ -372,12 +487,9 @@ async function refreshChatHistory() {
             </div>`;
     }).join('');
 
-    // Auto-scroll to latest message
-    const nearBottom =
-    win.scrollTop + win.clientHeight >= win.scrollHeight - 60;
-
-if (nearBottom) {
-    win.scrollTop = win.scrollHeight;}
+    // 5. Auto-scroll
+    // Using scrollHeight directly is often more reliable than 'smooth' behavior during rapid refreshes
+    win.scrollTop = win.scrollHeight;
 }
 
 /* --- MULTIMEDIA (VOICE & FILES) --- */
@@ -551,7 +663,6 @@ function viewStatus(email) {
 }
 
  async function openSettings() {
-    if (!currentUser || !currentUser.email) return;
     // currentUser should be set during your validateSession/login phase
     document.getElementById('settings-avatar-preview').innerHTML = getAvatarHTML(currentUser.name, currentUser.profilePic, "w-24 h-24 text-2xl");
     document.getElementById('settings-name-input').value = currentUser.name;
