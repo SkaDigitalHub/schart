@@ -12,7 +12,7 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: radial-gradient(circle at 10% 30%, #0A1922, #0B1A26);
-            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -20,7 +20,7 @@
         }
 
         /* ---------- premium spiritual tokens ---------- */
-        .chat-container { height: calc(100vh - 200px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(20, 184, 166, 0.5) rgba(10, 30, 40, 0.1); }
+        .chat-container { height: calc(100dvh - 200px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(20, 184, 166, 0.5) rgba(10, 30, 40, 0.1); }
         .chat-container::-webkit-scrollbar { width: 5px; }
         .chat-container::-webkit-scrollbar-track { background: rgba(15, 30, 40, 0.2); border-radius: 20px; margin-block: 8px; }
         .chat-container::-webkit-scrollbar-thumb { background: #14B8A6; border-radius: 20px; opacity: 0.7; }
@@ -1482,8 +1482,8 @@ function performLocalCleanup() {
 
     function toggleLocalVideoSize() {
         const localVideo = document.getElementById('local-video');
-        localVideo.classList.toggle('w-40');
-        localVideo.classList.toggle('h-56');
+        localVideo.classList.toggle('w-20');
+        localVideo.classList.toggle('h-40');
         localVideo.classList.toggle('w-60');
         localVideo.classList.toggle('h-80');
     }
