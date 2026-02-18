@@ -528,9 +528,10 @@ body.chat-active #chat-area {
             <!-- Remote video (full size) -->
             <video id="remote-video" autoplay class="w-full h-full object-cover"></video>
             
-            <!-- Local video (picture-in-picture) -->
-            <video id="local-video" autoplay muted class="absolute top-4 right-4 w-25 h-40 bg-black rounded-xl border-2 border-white/20 object-cover shadow-lg cursor-pointer hover:border-teal-400 transition" onclick="toggleLocalVideoSize()"></video>
-            
+            <!-- Local video (picture-in-picture) - Mobile Optimized -->
+        <video id="local-video" autoplay muted class="absolute bottom-4 right-4 w-24 h-40 sm:w-28 sm:h-48 md:w-32 md:h-56 lg:w-36 lg:h-64 bg-black rounded-xl border-2 border-white/20 object-cover shadow-lg cursor-pointer hover:border-teal-400 transition-all duration-300 z-30" style="max-width: 140px; max-height: 210px; touch-action: none;" onclick="toggleLocalVideoSize()" ontouchstart="handleVideoTouchStart(event)" ontouchmove="handleVideoTouchMove(event)" ontouchend="handleVideoTouchEnd(event)">
+        </video>
+
             <!-- Call info overlay -->
             <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full">
                 <h3 id="call-user-name" class="text-lg font-semibold">Connecting...</h3>
@@ -1327,6 +1328,9 @@ function setupPeer() {
         if (!callState.incomingCall) return;
         
         try {
+            ringtone.pause();
+            ringtone.currentTime = 0;
+
             if (callTimeout) {
                 clearTimeout(callTimeout);
                 callTimeout = null;
@@ -1365,6 +1369,9 @@ function setupPeer() {
         }
         
         call.on('stream', (remoteStream) => {
+             ringtone.pause();
+             ringtone.currentTime = 0;
+
             const remoteVid = document.getElementById('remote-video');
             remoteVid.srcObject = remoteStream;
             document.getElementById('call-status').innerText = "On Call";
@@ -1523,8 +1530,8 @@ function performLocalCleanup() {
 
     function toggleLocalVideoSize() {
         const localVideo = document.getElementById('local-video');
-        localVideo.classList.toggle('w-30');
-        localVideo.classList.toggle('h-40');
+        localVideo.classList.toggle('w-40');
+        localVideo.classList.toggle('h-56');
         localVideo.classList.toggle('w-60');
         localVideo.classList.toggle('h-80');
     }
@@ -1596,6 +1603,85 @@ function performLocalCleanup() {
         setInterval(() => { refreshChatHistory(); updateTypingIndicator(); }, 3000);
         setInterval(refreshStatusUI, 5000);
     }
+
+    // Add touch drag functionality for mobile
+let touchStartX = 0;
+let touchStartY = 0;
+let videoElement = null;
+
+function handleVideoTouchStart(event) {
+    event.preventDefault();
+    videoElement = document.getElementById('local-video');
+    const touch = event.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    
+    // Get current position
+    const rect = videoElement.getBoundingClientRect();
+    videoElement.dataset.startLeft = rect.left;
+    videoElement.dataset.startTop = rect.top;
+}
+
+function handleVideoTouchMove(event) {
+    event.preventDefault();
+    if (!videoElement) return;
+    
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+    
+    // Calculate new position
+    const newLeft = parseFloat(videoElement.dataset.startLeft) + deltaX;
+    const newTop = parseFloat(videoElement.dataset.startTop) + deltaY;
+    
+    // Constrain to screen bounds
+    const maxLeft = window.innerWidth - videoElement.offsetWidth - 10;
+    const maxTop = window.innerHeight - videoElement.offsetHeight - 10;
+    
+    videoElement.style.left = Math.min(Math.max(10, newLeft), maxLeft) + 'px';
+    videoElement.style.top = Math.min(Math.max(10, newTop), maxTop) + 'px';
+    videoElement.style.right = 'auto';
+    videoElement.style.bottom = 'auto';
+}
+
+function handleVideoTouchEnd(event) {
+    event.preventDefault();
+    videoElement = null;
+}
+
+// Enhanced toggle function for mobile
+function toggleLocalVideoSize() {
+    const localVideo = document.getElementById('local-video');
+    
+    if (window.innerWidth <= 640) {
+        // Mobile-specific toggle
+        localVideo.classList.toggle('enlarged-mobile');
+        
+        // Provide haptic feedback if available
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(20);
+        }
+    } else {
+        // Desktop toggle behavior
+        localVideo.classList.toggle('w-40');
+        localVideo.classList.toggle('h-56');
+        localVideo.classList.toggle('w-60');
+        localVideo.classList.toggle('h-80');
+    }
+}
+
+// Optional: Auto-adjust based on connection quality
+function adjustVideoQuality() {
+    if ('connection' in navigator) {
+        const connection = navigator.connection;
+        if (connection.downlink < 1.0) {
+            // Poor connection - reduce video size/quality
+            const video = document.getElementById('local-video');
+            video.style.width = '70px';
+            video.style.height = '124px';
+        }
+    }
+}
 </script>
 </body>
 </html>
