@@ -12,7 +12,7 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: radial-gradient(circle at 10% 30%, #0A1922, #0B1A26);
-            height: 100dvh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -300,29 +300,29 @@ body.chat-active #chat-area {
 <div id="app" class="max-w-5xl mx-auto w-full h-full flex flex-col my-2 px-1.5 relative">
     
     <!-- █████████████████████████ HEADER – EKKLO SACRED █████████████████████████ -->
-    <header class="glass-panel text-white px-6 py-4 flex justify-between items-center z-30 rounded-[32px] mb-2 shadow-2xl border border-white/10 mx-0.5">
-        <div class="flex items-center gap-4">
+    <header class="glass-panel text-white px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center z-30 rounded-[24px] sm:rounded-[32px] mb-2 shadow-2xl border border-white/10 mx-0.5">
+        <div class="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <!-- YOUR AVATAR (always visible) -->
             <div id="my-avatar" onclick="openSettings()" class="w-11 h-11 rounded-full bg-gradient-to-br from-teal-400/30 to-emerald-500/30 flex items-center justify-center font-bold text-lg cursor-pointer ring-2 ring-white/20 ring-offset-2 ring-offset-[#0B1F28] transition hover:ring-teal-300/70">
                 M
             </div>
             <!-- CONTACT AVATAR (visible when chat active) -->
             <div id="contact-avatar-container" class="hidden">
-                <div id="contact-avatar" class="w-11 h-11 rounded-full bg-gradient-to-br from-teal-400/30 to-emerald-500/30 flex items-center justify-center font-bold text-lg ring-2 ring-white/20"></div>
+                <div id="contact-avatar" class="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-teal-400/30 to-emerald-500/30 flex items-center justify-center font-bold text-base sm:text-lg cursor-pointer ring-2 ring-white/20 ring-offset-2 ring-offset-[#0B1F28] transition hover:ring-teal-300/70 flex-shrink-0"></div>
             </div>
-            <div class="leading-tight">
-                <h1 id="chat-header-name" class="font-bold text-xl tracking-tight text-white/90 flex items-center gap-2">
+            <div class="leading-tight min-w-0 flex-1">
+                <h1 id="chat-header-name" class="font-bold text-base sm:text-xl tracking-tight text-white/90 flex items-center gap-1 sm:gap-2 flex-wrap">
                     <span class="bg-gradient-to-r from-teal-300 to-emerald-200 bg-clip-text text-transparent">Ekklo</span>
-                    <span class="text-[8px] font-light px-2 py-0.5 bg-white/10 rounded-full text-teal-100/80 border border-white/5">connected in spirit</span>
+                    <span class="text-[6px] sm:text-[8px] font-light px-1.5 sm:px-2 py-0.5 bg-white/10 rounded-full text-teal-100/80 border border-white/5 whitespace-nowrap">connected in spirit</span>
                 </h1>
-                <p id="chat-header-status" class="text-[11px] font-light text-white/50 mt-0.5 tracking-wide">select a contact</p>
+                <p id="chat-header-status" class="text-[9px] sm:text-[11px] font-light text-white/50 mt-0.5 tracking-wide">select a contact</p>
             </div>
         </div>
-        <div class="flex gap-1 mr-2">
-         <button onclick="initiateCall(true)" class="p-2 text-white/80 hover:text-white"><i class="fas fa-video"></i></button>
-         <button onclick="initiateCall(false)" class="p-2 text-white/80 hover:text-white"><i class="fas fa-phone"></i></button>
-        <button onclick="handleLogout()" class="opacity-60 hover:opacity-100 p-2 rounded-full hover:bg-white/5 transition-all duration-200">
-            <i class="fas fa-sign-out-alt text-white/80 text-lg"></i>
+        <div class="flex gap-0.5 sm:gap-1 mr-0 sm:mr-2 flex-shrink-0">
+         <button onclick="initiateCall(true)" class="p-1.5 sm:p-2 text-white/80 hover:text-white"><i class="fas fa-video text-sm sm:text-base"></i></button>
+         <button onclick="initiateCall(false)" class="p-1.5 sm:p-2 text-white/80 hover:text-white"><i class="fas fa-phone text-sm sm:text-base"></i></button>
+        <button onclick="handleLogout()" class="opacity-60 hover:opacity-100 p-1.5 sm:p-2 rounded-full hover:bg-white/5 transition-all duration-200">
+            <i class="fas fa-sign-out-alt text-white/80 text-sm sm:text-lg"></i>
         </button>
         </div>
     </header>
@@ -332,7 +332,7 @@ body.chat-active #chat-area {
         <div class="w-full max-w-md glass-panel rounded-[40px] p-10 text-center border border-white/5 shadow-[0_30px_50px_-20px_rgba(0,0,0,0.8)]">
             <div class="flex justify-center mb-6">
                 <div class="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400/20 to-emerald-400/20 flex items-center justify-center border border-white/20 backdrop-blur-lg">
-                        <img src="ekklo.png" alt="Logo" class="w-full h-full object-cover">
+                     <img src="ekklo.png" alt="Logo" class="w-full h-full object-cover">
                 </div>
             </div>
             <h2 class="text-4xl font-bold text-white tracking-tight mb-2">Ekklo</h2>
@@ -441,20 +441,20 @@ body.chat-active #chat-area {
         <!-- STATUS ROW + USER LIST CONTAINER -->
         <div class="flex flex-col overflow-hidden h-full">
             <!-- status row - always visible -->
-            <div class="bg-white/5 backdrop-blur-2xl border-b border-white/5 px-5 py-4 flex gap-6 overflow-x-auto no-scrollbar items-center shrink-0">
+            <div class="bg-white/5 backdrop-blur-2xl border-b border-white/5 px-2 sm:px-5 py-2 sm:py-4 flex gap-3 sm:gap-6 overflow-x-auto no-scrollbar items-center shrink-0">
                 <!-- add status – premium glass card -->
-                <div class="flex flex-col items-center min-w-[80px] cursor-pointer group" onclick="openStatusModal()">
-                    <div class="w-16 h-16 rounded-full bg-white/5 backdrop-blur flex items-center justify-center border border-white/10 relative transition-all group-hover:border-teal-400/70 group-hover:shadow-lg group-hover:shadow-teal-500/10">
-                        <i class="fas fa-plus text-teal-300 text-2xl"></i>
-                        <div class="absolute -bottom-0.5 -right-0.5 bg-teal-600 text-white rounded-full w-6 h-6 flex items-center justify-center border-2 border-[#0F1F28] shadow-md">
-                            <i class="fas fa-pray text-[12px]"></i>
+                <div class="flex flex-col items-center min-w-[60px] sm:min-w-[80px] cursor-pointer group" onclick="openStatusModal()">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 backdrop-blur flex items-center justify-center border border-white/10 relative transition-all group-hover:border-teal-400/70 group-hover:shadow-lg group-hover:shadow-teal-500/10">
+                        <i class="fas fa-plus text-teal-300 text-xl sm:text-2xl"></i>
+                        <div class="absolute -bottom-0.5 -right-0.5 bg-teal-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center border-2 border-[#0F1F28] shadow-md">
+                            <i class="fas fa-pray text-[10px] sm:text-[12px]"></i>
                         </div>
                     </div>
-                    <span class="text-[11px] mt-2 font-medium text-white/50 group-hover:text-white/80">add status</span>
+                    <span class="text-[9px] sm:text-[11px] mt-1 sm:mt-2 font-medium text-white/50 group-hover:text-white/80 whitespace-nowrap">add status</span>
                 </div>
                 
-                <div id="status-list" class="flex gap-5"></div>
-                <div class="border-l mx-1 h-12 border-white/10"></div>
+                <div id="status-list" class="flex gap-2 sm:gap-5"></div>
+                <div class="border-l mx-0.5 sm:mx-1 h-8 sm:h-12 border-white/10 flex-shrink-0"></div>
             </div>
 
             <!-- USER LIST -->
@@ -499,20 +499,20 @@ body.chat-active #chat-area {
                 </div>
 
                 <!-- FOOTER -->
-                <footer class="p-4 bg-[#0C1C24]/70 backdrop-blur-2xl border-t border-white/5 flex items-center gap-3 shrink-0">
-                    <label class="p-3 cursor-pointer text-white/50 hover:text-teal-300 transition bg-white/5 rounded-full backdrop-blur-sm hover:bg-teal-500/10">
-                        <i class="fas fa-paperclip text-xl"></i>
-                        <input type="file" id="file-input" class="hidden" onchange="handleFileSelection(this.files[0])">
+                <footer class="p-2 sm:p-4 bg-[#0C1C24]/70 backdrop-blur-2xl border-t border-white/5 flex items-center gap-1 sm:gap-3 shrink-0">
+                    <label class="p-2 sm:p-3 cursor-pointer text-white/50 hover:text-teal-300 transition bg-white/5 rounded-full backdrop-blur-sm hover:bg-teal-500/10 flex-shrink-0">
+                        <i class="fas fa-paperclip text-lg sm:text-xl"></i>
+                        <input type="file" id="file-input" class="hidden" onchange="handleFileSelection(this)">
                     </label>
-                    <input type="text" id="msg-input" oninput="sendTypingStatus()" placeholder="write a message..." class="flex-1 p-4 glass-input rounded-full outline-none text-sm placeholder:text-white/30 shadow-inner">
-                    <button id="mic-btn" onclick="toggleVoiceRecording()" class="p-3 text-white/50 hover:text-teal-300 transition bg-white/5 rounded-full backdrop-blur-sm hover:bg-teal-500/10">
-                        <i class="fas fa-microphone text-xl"></i>
+                    <input type="text" id="msg-input" oninput="sendTypingStatus()" placeholder="write a message..." class="flex-1 min-w-0 p-2 sm:p-4 glass-input rounded-full outline-none text-xs sm:text-sm placeholder:text-white/30 shadow-inner">
+                    <button id="mic-btn" onclick="toggleVoiceRecording()" class="p-2 sm:p-3 text-white/50 hover:text-teal-300 transition bg-white/5 rounded-full backdrop-blur-sm hover:bg-teal-500/10 flex-shrink-0">
+                        <i class="fas fa-microphone text-lg sm:text-xl"></i>
                     </button>
-                    <button id="send-btn" onclick="processMessageSend()" class="w-10 h-10 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl shadow-teal-500/30 active:scale-90 hover:scale-105 transition-all duration-200">
-                        <i class="fas fa-paper-plane"></i>
+                    <button id="send-btn" onclick="processMessageSend()" class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl shadow-teal-500/30 active:scale-90 hover:scale-105 transition-all duration-200 flex-shrink-0">
+                        <i class="fas fa-paper-plane text-sm sm:text-base"></i>
                     </button>
                 </footer>
-                <div id="recording-timer" class="text-center text-teal-300 text-[11px] font-bold py-1.5 bg-[#0C1C24]/90 backdrop-blur-sm hidden">RECORDING: 0s</div>
+                <div id="recording-timer" class="text-center text-teal-300 text-[10px] sm:text-[11px] font-bold py-1 sm:py-1.5 bg-[#0C1C24]/90 backdrop-blur-sm hidden">RECORDING: 0s</div>
             </div>
         </div>       
     </main>
@@ -529,7 +529,7 @@ body.chat-active #chat-area {
             <video id="remote-video" autoplay class="w-full h-full object-cover"></video>
             
             <!-- Local video (picture-in-picture) -->
-            <video id="local-video" autoplay muted class="absolute top-4 right-4 w-20 h-40 bg-black rounded-xl border-2 border-white/20 object-cover shadow-lg cursor-pointer hover:border-teal-400 transition" onclick="toggleLocalVideoSize()"></video>
+            <video id="local-video" autoplay muted class="absolute top-4 right-4 w-25 h-40 bg-black rounded-xl border-2 border-white/20 object-cover shadow-lg cursor-pointer hover:border-teal-400 transition" onclick="toggleLocalVideoSize()"></video>
             
             <!-- Call info overlay -->
             <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-md px-4 py-2 rounded-full">
@@ -822,11 +822,11 @@ body.chat-active #chat-area {
                 const displayName = (email === currentUser.email) ? "My Status" : user.name.split(' ')[0];
 
                 return `
-                    <div class="flex flex-col items-center min-w-[70px] cursor-pointer group" onclick="viewStatus('${email}')">
-                        <div class="status-ring p-[2px] border-2 ${ringColor} rounded-full transition-all duration-300 group-hover:border-teal-300/80">
-                            ${getAvatarHTML(user.name, user.profilePic, "w-14 h-14")}
+                    <div class="flex flex-col items-center min-w-[50px] sm:min-w-[70px] cursor-pointer group" onclick="viewStatus('${email}')">
+                        <div class="status-ring p-[1px] sm:p-[2px] border-2 ${ringColor} rounded-full transition-all duration-300 group-hover:border-teal-300/80">
+                            ${getAvatarHTML(user.name, user.profilePic, "w-10 h-10 sm:w-14 sm:h-14")}
                         </div>
-                        <span class="text-[11px] mt-1.5 ${hasViewed ? 'text-white/40' : 'text-white/80 font-medium'}">${displayName}</span>
+                        <span class="text-[11px] mt-1 sm:mt-1.5 ${hasViewed ? 'text-white/40' : 'text-white/80 font-medium'} max-w-[50px] sm:max-w-[70px]">${displayName}</span>
                     </div>`;
             }).join('');
     }
@@ -1153,7 +1153,6 @@ body.chat-active #chat-area {
     function showUserList() {
         document.body.classList.remove('chat-active');
         document.getElementById('chat-area').classList.remove('active');
-        resetToMyProfile();
     }
 
     // ===== CALL SYSTEM =====
@@ -1245,6 +1244,11 @@ function setupPeer() {
 }
 
     async function initiateCall(videoEnabled) {
+        if (!peer) {
+        showAlert("Error", "Call system not ready. Please wait a moment and try again.");
+        return;
+    }
+
         if (!activeContact) return showAlert("Error", "Select a contact first");
         
         if (callState.isInCall) {
@@ -1283,8 +1287,24 @@ function setupPeer() {
             
             const call = peer.call(targetPeerId, localStream);
             callState.currentCall = call;
+
+            // ADD ERROR HANDLER FOR FAILED CALLS
+        call.on('error', (err) => {
+            console.error("Call failed:", err);
+            clearTimeout(callTimeout); // Clear the timeout
+            if (err.type === 'peer-unavailable') {
+                showAlert("User Offline", "The person you're calling is offline");
+            } else {
+                showAlert("Call Failed", "Could not connect to user");
+            }
+            endCall();
+        });
             
             const dataConnection = peer.connect(targetPeerId);
+
+            dataConnection.on('error', (err) => {
+            console.error("Data connection failed:", err);});
+
             dataConnection.on('open', () => {
                 dataConnection.send(JSON.stringify({ 
                     type: 'call-initiated',
@@ -1299,6 +1319,7 @@ function setupPeer() {
             console.error(err);
             showAlert("Media Error", "Could not access camera/mic. Please check permissions.");
             callState.isInCall = false;
+            performLocalCleanup();
         }
     }
 
@@ -1377,21 +1398,41 @@ function setupPeer() {
 }
 
     function endCall() {
+        if (!peer) {
+        console.log("Peer not initialized, performing local cleanup only");
+        performLocalCleanup();
+        return;
+    }
+    ringtone.pause();
+    ringtone.currentTime = 0;
+
     // 1. Identify who to signal
     const targetId = callState.callPeerId || (callState.incomingCall ? callState.incomingCall.peer : null);
 
-    if (targetId) {
-        // 2. Send the signal via Data Connection
+     if (targetId) {
+        // Try to signal, but don't wait forever
         const signalConn = peer.connect(targetId);
+        
+        // Set a timeout for the connection attempt
+        const connectionTimeout = setTimeout(() => {
+            console.log("Signal connection timeout, cleaning up locally");
+            performLocalCleanup();
+        }, 2000);
+        
         signalConn.on('open', () => {
+            clearTimeout(connectionTimeout);
             const signalType = (!callState.isInCall && callState.incomingCall) ? 'call-rejected' : 'call-ended';
             signalConn.send(JSON.stringify({ type: signalType, from: myPeerId }));
             
-            // Give a tiny delay for data to send before cleaning up locally
             setTimeout(() => {
                 signalConn.close();
                 performLocalCleanup();
             }, 200);
+        });
+        
+        signalConn.on('error', () => {
+            clearTimeout(connectionTimeout);
+            performLocalCleanup();
         });
     } else {
         performLocalCleanup();
@@ -1482,7 +1523,7 @@ function performLocalCleanup() {
 
     function toggleLocalVideoSize() {
         const localVideo = document.getElementById('local-video');
-        localVideo.classList.toggle('w-20');
+        localVideo.classList.toggle('w-30');
         localVideo.classList.toggle('h-40');
         localVideo.classList.toggle('w-60');
         localVideo.classList.toggle('h-80');
