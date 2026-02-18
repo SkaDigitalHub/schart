@@ -332,7 +332,7 @@ body.chat-active #chat-area {
         <div class="w-full max-w-md glass-panel rounded-[40px] p-10 text-center border border-white/5 shadow-[0_30px_50px_-20px_rgba(0,0,0,0.8)]">
             <div class="flex justify-center mb-6">
                 <div class="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400/20 to-emerald-400/20 flex items-center justify-center border border-white/20 backdrop-blur-lg">
-                     <img src="ekklo.png" alt="Logo" class="w-full h-full object-cover">
+                    <img src="ekklo.png" alt="Logo" class="w-full h-full object-cover">
                 </div>
             </div>
             <h2 class="text-4xl font-bold text-white tracking-tight mb-2">Ekklo</h2>
@@ -603,8 +603,15 @@ body.chat-active #chat-area {
         isInCall: false,
         callPeerId: null,
         callStartTime: null,
-        callTimerInterval: null
+        callTimerInterval: null,
+        isOutgoing: false,  
+        isIncoming: false,
+        callAnswered: false,
+        noAnswer: false,
+        callEnded: false,
+        callTimeout: null 
     };
+
     let callTimeout = null;
     const CALL_TIMEOUT_DURATION = 15000; // 15 seconds timeout
     let localStream = null;
@@ -1167,12 +1174,31 @@ body.chat-active #chat-area {
     peer.on('connection', (conn) => {
         conn.on('data', (data) => {
             const msg = JSON.parse(data);
-            if (msg.type === 'call-ended' || msg.type === 'call-rejected') {
-                console.log("Remote signal received:", msg.type);
-                // Force close locally without re-sending the signal back
-                performLocalCleanup();
-                showAlert("Call Ended", msg.type === 'call-rejected' ? "Call declined" : "Other party hung up");
-            }
+
+             if (callState.callEnded) return;
+
+            if (msg.type === 'call-rejected') {
+            console.log("Call was rejected");
+            showAlert("Call Declined", "The User declined your call");
+            performLocalCleanup();
+        } else if (msg.type === 'no-answer') {
+            console.log("Call was not answered");
+            showAlert("No Answer", "The User did not answer");
+            performLocalCleanup();
+        } else if (msg.type === 'call-cancelled') {
+            console.log("Call was cancelled");
+            showAlert("Call Cancelled", "The caller hung up");
+            performLocalCleanup();
+        } else if (msg.type === 'call-ended') {
+            console.log("Call ended by remote");
+            showAlert("Call Ended", "The User ended the call");
+            performLocalCleanup();
+        } else if (msg.type === 'busy') {
+            console.log("User is busy");
+            showAlert("Busy", "The User on another call");
+            performLocalCleanup();
+        }
+
         });
     });
 
@@ -1190,6 +1216,7 @@ body.chat-active #chat-area {
             return;
         }
         callState.incomingCall = incomingCall;
+        callState.isIncoming = true;
         showIncomingCallUI(); // Your existing UI trigger
 
         // Try to find the caller's name
@@ -1207,7 +1234,20 @@ body.chat-active #chat-area {
         // Set timeout for unanswered incoming call
         callTimeout = setTimeout(() => {
             if (callState.incomingCall && !callState.isInCall) {
-                showAlert("Missed Call", "Call timed out");
+                
+                 // Send 'no-answer' signal to caller
+            const signalConn = peer.connect(incomingCall.peer);
+            signalConn.on('open', () => {
+                signalConn.send(JSON.stringify({ 
+                    type: 'no-answer',
+                    from: myPeerId 
+                }));
+                setTimeout(() => {
+                    signalConn.close();
+                }, 200);
+            });
+
+                showAlert("Missed Call", "You missed a call from " + (caller ? caller.name : "unknown"));
                 endCall();
             }
         }, CALL_TIMEOUT_DURATION);
@@ -1245,84 +1285,112 @@ function setupPeer() {
 }
 
     async function initiateCall(videoEnabled) {
-        if (!peer) {
+    if (!peer) {
         showAlert("Error", "Call system not ready. Please wait a moment and try again.");
         return;
     }
 
-        if (!activeContact) return showAlert("Error", "Select a contact first");
+    if (!activeContact) return showAlert("Error", "Select a contact first");
+    
+    if (callState.isInCall) {
+        showAlert("Error", "You're already in a call. End it first.");
+        return;
+    }
+
+    const targetPeerId = activeContact.toLowerCase().replace(/[^a-z0-9]/g, "");
+    
+    try {
+        if (callTimeout) clearTimeout(callTimeout);
         
-        if (callState.isInCall) {
-            showAlert("Error", "You're already in a call. End it first.");
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            video: videoEnabled, 
+            audio: true 
+        });
+        
+        document.getElementById('local-video').srcObject = localStream;
+        document.getElementById('call-modal').style.display = 'flex';
+        document.getElementById('answer-btn').classList.add('hidden');
+        document.getElementById('hangup-btn').classList.remove('hidden');
+        
+        const contactName = document.getElementById('chat-contact-name')?.innerText || document.getElementById('chat-header-name').innerText;
+        document.getElementById('call-user-name').innerText = "Calling " + contactName;
+        document.getElementById('call-status').innerText = "Ringing...";
+        
+        callState.isInCall = true;
+        callState.callPeerId = targetPeerId;
+        callState.isOutgoing = true;
+        callState.callAnswered = false;
+        callState.noAnswer = false;
+
+        // Check if user is online first (using your existing online status)
+        const user = allUsersGlobal.find(u => u.email === activeContact);
+        const lastActive = user?.lastActive ? parseLastActive(user.lastActive) : null;
+        const isOnline = lastActive && (new Date() - lastActive) < 120000; // 2 minutes
+        
+        if (!isOnline) {
+            showAlert("User Offline", `${contactName} is currently offline. Please try again later.`);
+            endCall();
             return;
         }
-
-        const targetPeerId = activeContact.toLowerCase().replace(/[^a-z0-9]/g, "");
         
-        try {
-            if (callTimeout) clearTimeout(callTimeout);
-            
-            localStream = await navigator.mediaDevices.getUserMedia({ 
-                video: videoEnabled, 
-                audio: true 
-            });
-            
-            document.getElementById('local-video').srcObject = localStream;
-            document.getElementById('call-modal').style.display = 'flex';
-            document.getElementById('answer-btn').classList.add('hidden');
-            document.getElementById('hangup-btn').classList.remove('hidden');
-            
-            const contactName = document.getElementById('chat-contact-name')?.innerText || document.getElementById('chat-header-name').innerText;
-            document.getElementById('call-user-name').innerText = "Calling " + contactName;
-            document.getElementById('call-status').innerText = "Ringing...";
-            
-            callState.isInCall = true;
-            callState.callPeerId = targetPeerId;
-            
-            callTimeout = setTimeout(() => {
-                if (callState.isInCall && callState.currentCall && !callState.currentCall.open) {
-                    showAlert("Call Timeout", "User did not answer");
-                    endCall();
-                }
-            }, CALL_TIMEOUT_DURATION);
-            
-            const call = peer.call(targetPeerId, localStream);
-            callState.currentCall = call;
+        const call = peer.call(targetPeerId, localStream);
+        callState.currentCall = call;
+        
+        // Set timeout for NO ANSWER (15 seconds)
+        const noAnswerTimeout = setTimeout(() => {
+            if (callState.isInCall && callState.currentCall && !callState.callAnswered) {
+                console.log("No answer timeout triggered");
+                callState.noAnswer = true;
+                callState.callEnded = true;
+                showAlert("No Answer", `${contactName} did not answer`);
+                endCall();
+            }
+        }, 15000); // 15 seconds for no answer
+        
+        callState.callTimeout = noAnswerTimeout;
 
-            // ADD ERROR HANDLER FOR FAILED CALLS
+        // ERROR HANDLER FOR FAILED CALLS (offline, etc)
         call.on('error', (err) => {
             console.error("Call failed:", err);
-            clearTimeout(callTimeout); // Clear the timeout
+            clearTimeout(callState.callTimeout);
+            
             if (err.type === 'peer-unavailable') {
-                showAlert("User Offline", "The person you're calling is offline");
+                showAlert("User Offline", `${contactName} is currently offline`);
+            } else if (err.message && err.message.includes('does not exist')) {
+                showAlert("User Offline", `${contactName} is not connected to the call system`);
             } else {
-                showAlert("Call Failed", "Could not connect to user");
+                showAlert("Call Failed", "Could not connect to user. User is offline");
             }
             endCall();
         });
-            
-            const dataConnection = peer.connect(targetPeerId);
+        
+        const dataConnection = peer.connect(targetPeerId);
 
-            dataConnection.on('error', (err) => {
-            console.error("Data connection failed:", err);});
+        dataConnection.on('error', (err) => {
+            console.error("Data connection failed:", err);
+        });
 
-            dataConnection.on('open', () => {
-                dataConnection.send(JSON.stringify({ 
-                    type: 'call-initiated',
-                    from: myPeerId,
-                    to: targetPeerId
-                }));
-            });
+        dataConnection.on('open', () => {
+            // Clear the no answer timeout since we have a data connection
+            clearTimeout(callState.callTimeout);
             
-            handleCallEvents(call);
-            ringtone.play().catch(e => console.log("Audio play blocked by browser"));
-        } catch (err) {
-            console.error(err);
-            showAlert("Media Error", "Could not access camera/mic. Please check permissions.");
-            callState.isInCall = false;
-            performLocalCleanup();
-        }
+            dataConnection.send(JSON.stringify({ 
+                type: 'call-initiated',
+                from: myPeerId,
+                to: targetPeerId
+            }));
+        });
+        
+        handleCallEvents(call);
+        ringtone.play().catch(e => console.log("Audio play blocked by browser"));
+        
+    } catch (err) {
+        console.error(err);
+        showAlert("Media Error", "Could not access camera/mic. Please check permissions.");
+        callState.isInCall = false;
+        performLocalCleanup();
     }
+}
 
     async function answerCall() {
         if (!callState.incomingCall) return;
@@ -1363,38 +1431,106 @@ function setupPeer() {
     }
 
     function handleCallEvents(call) {
-        if (callTimeout) {
-            clearTimeout(callTimeout);
-            callTimeout = null;
-        }
-        
-        call.on('stream', (remoteStream) => {
-             ringtone.pause();
-             ringtone.currentTime = 0;
-
-            const remoteVid = document.getElementById('remote-video');
-            remoteVid.srcObject = remoteStream;
-            document.getElementById('call-status').innerText = "On Call";
-            document.getElementById('call-status').classList.remove('animate-pulse');
-            startCallTimer();
-        });
-
-        call.on('close', () => {
-            console.log('Call closed by remote user');
-            if (callState.isInCall) {
-                showAlert("Call Ended", "The other party ended the call");
-                endCall();
-            }
-        });
-        
-        call.on('error', (err) => {
-            console.error("Call error:", err);
-            if (callState.isInCall) {
-                showAlert("Call Error", "Connection lost");
-                endCall();
-            }
-        });
+    // Clear any existing timeouts
+    if (callTimeout) {
+        clearTimeout(callTimeout);
+        callTimeout = null;
     }
+    
+    call.on('stream', (remoteStream) => {
+        console.log("Call answered - stream received");
+        
+        // Mark call as answered
+        callState.callAnswered = true;
+        callState.noAnswer = false;
+        
+        // Stop ringing
+        ringtone.pause();
+        ringtone.currentTime = 0;
+
+        // Display remote video
+        const remoteVid = document.getElementById('remote-video');
+        remoteVid.srcObject = remoteStream;
+        document.getElementById('call-status').innerText = "On Call";
+        document.getElementById('call-status').classList.remove('animate-pulse');
+        
+        // Start call timer
+        startCallTimer();
+    });
+
+    call.on('close', () => {
+        console.log('Call closed by remote user');
+        
+        // Stop ringing if it's still playing
+        ringtone.pause();
+        ringtone.currentTime = 0;
+        
+        if (callState.isInCall) {
+            // Only show "Call Ended" if it was an established call
+            if (callState.callAnswered) {
+                showAlert("Call Ended", "The call has ended");
+            }
+            endCall();
+        }
+    });
+    
+    call.on('error', (err) => {
+        console.error("Call error:", err);
+        
+        // Stop ringing
+        ringtone.pause();
+        ringtone.currentTime = 0;
+        
+        clearTimeout(callTimeout);
+        
+        if (callState.isInCall) {
+            // Don't show error if we already handled it (like no answer)
+            if (!callState.noAnswer) {
+                if (err.type === 'peer-unavailable' || err.message?.includes('does not exist')) {
+                    showAlert("User Offline", "User is unavailable");
+                } else {
+                    showAlert("Call Error", "Connection lost");
+                }
+            }
+            endCall();
+        }
+    });
+    
+    // Monitor ICE connection state
+    call.on('iceStateChanged', (state) => {
+        console.log("ICE connection state:", state);
+        
+        if (state === 'failed' || state === 'disconnected') {
+            console.log("ICE connection failed or disconnected");
+            
+            // Stop ringing
+            ringtone.pause();
+            ringtone.currentTime = 0;
+            
+            if (callState.isInCall && !callState.callAnswered && !callState.noAnswer) {
+                // Connection failed before call was answered
+                showAlert("Connection Failed", "Could not establish connection");
+                endCall();
+            } else if (callState.isInCall && callState.callAnswered) {
+                // Connection lost during active call
+                showAlert("Call Dropped", "Connection lost");
+                endCall();
+            }
+        }
+    });
+
+    // Add handler for call connection state
+    call.on('connectionStateChanged', (state) => {
+        console.log("Connection state changed:", state);
+        
+        if (state === 'failed' || state === 'disconnected' || state === 'closed') {
+            // Stop ringing
+            ringtone.pause();
+            ringtone.currentTime = 0;
+        }
+    });
+}
+
 
     function showIncomingCallUI() {
     const modal = document.getElementById('call-modal');
@@ -1428,7 +1564,23 @@ function setupPeer() {
         
         signalConn.on('open', () => {
             clearTimeout(connectionTimeout);
-            const signalType = (!callState.isInCall && callState.incomingCall) ? 'call-rejected' : 'call-ended';
+
+             // Determine signal type
+            let signalType;
+            if (!callState.isInCall && callState.incomingCall) {
+                // This is an incoming call being rejected
+                signalType = 'call-rejected';
+            } else if (callState.noAnswer) {
+                // This was a no-answer timeout
+                signalType = 'no-answer';
+            } else if (callState.isOutgoing && !callState.callAnswered) {
+                // Outgoing call ended before being answered (user hung up)
+                signalType = 'call-cancelled';
+            } else {
+                // Normal call end
+                signalType = 'call-ended';
+            }
+
             signalConn.send(JSON.stringify({ type: signalType, from: myPeerId }));
             
             setTimeout(() => {
