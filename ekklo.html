@@ -293,6 +293,25 @@ body.chat-active #chat-area {
             50% { transform: scale(1.1); text-shadow: 0 0 12px #14B8A6; }
             100% { transform: scale(1); text-shadow: 0 0 0 #14B8A6; }
         }
+
+    /* Add to your style section */
+#reply-preview {
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+#message-context-menu {
+    animation: fadeIn 0.1s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
     </style>
 </head>
 <body class="antialiased">
@@ -482,6 +501,28 @@ body.chat-active #chat-area {
                     </div>
                 </div>
 
+                <!-- Reply preview bar -->
+<div id="reply-preview" class="hidden mx-5 mb-2 p-3 bg-[#1A2F38] rounded-xl border-l-4 border-teal-400 flex items-center justify-between">
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+        <i class="fas fa-reply text-teal-400 text-sm"></i>
+        <div class="flex-1 min-w-0">
+            <p id="reply-sender" class="text-teal-400 text-xs font-bold uppercase tracking-wider">Replying to</p>
+            <p id="reply-message" class="text-white/80 text-sm truncate"></p>
+        </div>
+    </div>
+    <button onclick="cancelReply()" class="text-white/40 hover:text-white text-xl ml-2">
+        <i class="fas fa-times-circle"></i>
+    </button>
+</div>
+
+<!-- Context menu for messages -->
+<div id="message-context-menu" class="hidden fixed z-50 bg-[#1E2F38] rounded-xl shadow-2xl border border-white/10 py-2 min-w-[150px]">
+    <button onclick="replyToMessage()" class="w-full px-4 py-3 text-left text-white/90 hover:bg-teal-500/20 flex items-center gap-3">
+        <i class="fas fa-reply text-teal-400"></i>
+        <span>Reply</span>
+    </button>
+</div>
+
                 <div id="typing-notif" class="px-5 text-[11px] text-teal-300 font-medium h-5 bg-transparent"></div>
                 
                 <!-- MEDIA PREVIEW -->
@@ -579,17 +620,21 @@ body.chat-active #chat-area {
 
 <script>
     // ===== CORE CONFIGURATION =====
-    const API_URL = "https://script.google.com/macros/s/AKfycbw8QNPp60wD8rQ2XykwmmfECFduo2J9RUVO5vJuhcNvwLSPIu1V92pm2pkbbUrKB0Rw/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbyApGDpe3VVqOD-AKwqrrTFXcpQxhj_6bWfI1-KkV55wHc2g1epVgNpsGInuXuRnOt1/exec"; 
     const CLOUD_NAME = "dprnytwp9";
     const UPLOAD_PRESET = "AppPortal-Chat";
 
     // ===== MESSAGING VARIABLES =====
+    let isRefreshingChat = false; // Add this
     let sessionToken = localStorage.getItem('chat_token');
     let currentUserEmail = null, activeContact = null, selectedFile = null;
     let lastMsgCount = 0, userStatuses = {}, typingTimer;
     let mediaRecorder, audioChunks = [], isRecording = false, recordStartTime, timerInterval;
     let allUsersGlobal = [];
     let messageStatuses = {};
+    let replyingTo = null; // Store message being replied to
+    let contextMenuMessage = null; // For long-press menu
+    let contextMenuTimer = null;
 
     // ===== CALL SYSTEM VARIABLES =====
     const ringtone = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
@@ -1088,7 +1133,7 @@ if (lastMessagesRes.success) {
         apiRequest('markAsRead', { contactEmail: e });
         setTimeout(() => {
     refreshChatHistory();
-        }, 300); // 300ms delay
+        }, 100); // 100ms delay
         refreshUserList();
     }
 
@@ -1115,12 +1160,11 @@ if (lastMessagesRes.success) {
         showUserList();
     }
 
-    async function refreshChatHistory() {
+   async function refreshChatHistory() {
     if (!activeContact) return;
 
     const statusCheck = await apiRequest('getMessageStatus', { contactEmail: activeContact });
     if (statusCheck.changed) {
-        // Only update the status icons, not reload all messages
         updateMessageStatusIcons(statusCheck.statuses);
         return;
     }
@@ -1129,12 +1173,20 @@ if (lastMessagesRes.success) {
     if (!res.success || res.messages.length === lastMsgCount) return;
 
     if (activeContact && res.messages.length > 0) {
+        const chatArea = document.getElementById('chat-area');
+        const isChatVisible = chatArea.classList.contains('active');
+        if (isChatVisible) {
         apiRequest('markAsRead', { contactEmail: activeContact });
+        }
         apiRequest('markMessagesAsDelivered', {});
     }
     
     lastMsgCount = res.messages.length;
     const win = document.getElementById('chat-window');
+    
+    // Get user names map for replies
+    const userMap = {};
+    allUsersGlobal.forEach(u => userMap[u.email] = u.name);
     
     // Group messages by date
     let lastDate = '';
@@ -1164,9 +1216,36 @@ if (lastMessagesRes.success) {
         
         const isMe = m[1] === currentUserEmail;
         const body = m[2], mime = m[5] || 'text/plain', time = new Date(m[3]).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const messageId = m[7]; // Column H: Message ID
+        const replyToId = m[8]; // Column I: Reply to ID
+        const replyContext = m[9]; // Reply context data
 
         const readStatus = m[4] || 'unread';
         const deliveryStatus = m[6] || 'sent';
+
+        // Ensure body is a string
+        const safeBody = body ? String(body) : '';
+       
+        // Add reply HTML if this message is a reply
+        let replyHtml = '';
+        if (replyContext) {
+            const replySender = replyContext.sender === currentUserEmail ? 'You' : (userMap[replyContext.sender] || replyContext.sender.split('@')[0]);
+            let replyText = replyContext.message;
+            
+            if (replyContext.mimeType && replyContext.mimeType !== 'text/plain') {
+                if (replyContext.mimeType.includes('image')) replyText = '📷 Photo';
+                else if (replyContext.mimeType.includes('video')) replyText = '🎥 Video';
+                else if (replyContext.mimeType.includes('audio')) replyText = '🎤 Voice';
+                else replyText = '📎 File';
+            }
+            
+            replyHtml = `
+                <div class="text-xs opacity-70 mb-1 pb-1 border-l-2 border-teal-400 pl-2 truncate cursor-pointer hover:bg-teal-500/10 transition rounded"
+         onclick="jumpToMessage('${replyToId}')">
+                    <span class="font-bold text-teal-300">↪ ${replySender}</span>: ${replyText}
+                </div>
+            `;
+        }
         
         let statusIcon = '';
         if (isMe) {
@@ -1179,15 +1258,29 @@ if (lastMessagesRes.success) {
             }
         }
         
-        let messageHtml = body;
-        if (mime.includes('image')) messageHtml = `<img src="${body}" class="media-content rounded-xl cursor-pointer shadow-lg" onclick="window.open('${body}')">`;
-        else if (mime.includes('video')) messageHtml = `<video controls class="media-content rounded-xl shadow-lg"><source src="${body}"></video>`;
-        else if (mime.includes('audio')) messageHtml = `<audio controls class="w-48 h-8 mt-1"><source src="${body}"></audio>`;
-        else if (body.startsWith('http')) messageHtml = `<a href="${body}" target="_blank" class="bg-teal-800/40 flex items-center gap-2 text-sm underline italic text-teal-100 p-2 rounded-xl"><i class="fas fa-file-download"></i> Attachment</a>`;
+        // Create message content - USE messageContent consistently
+        let messageContent = safeBody;
+        if (mime.includes('image')) messageContent = `<img src="${body}" class="media-content rounded-xl cursor-pointer shadow-lg" onclick="window.open('${body}')">`;
+        else if (mime.includes('video')) messageContent = `<video controls class="media-content rounded-xl shadow-lg"><source src="${body}"></video>`;
+        else if (mime.includes('audio')) messageContent = `<audio controls class="w-48 h-8 mt-1"><source src="${body}"></audio>`;
+        else if (body && typeof body === 'string' && body.startsWith('http')) messageContent = `<a href="${body}" target="_blank" class="bg-teal-800/40 flex items-center gap-2 text-sm underline italic text-teal-100 p-2 rounded-xl"><i class="fas fa-file-download"></i> Attachment</a>`;
+        
+        // Message data for context menu
+        const messageData = {
+            id: messageId,
+            sender: m[1],
+            senderName: userMap[m[1]] || m[1].split('@')[0],
+            message: body,
+            mimeType: mime
+        };
         
         html += `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-            <div class="message-bubble ${isMe ? 'sent' : 'received'}">
-                ${messageHtml}
+            <div class="message-bubble ${isMe ? 'sent' : 'received'}" data-message-id="${messageId}"
+                 oncontextmenu="showMessageContext(event, ${JSON.stringify(messageData).replace(/"/g, '&quot;')})"
+                 ontouchstart="handleTouchStart(event, ${JSON.stringify(messageData).replace(/"/g, '&quot;')})"
+                 ontouchend="handleTouchEnd()">
+                ${replyHtml}
+                ${messageContent}  <!-- Use messageContent here, not messageHtml -->
                 <div class="flex items-center justify-end gap-1 mt-1.5">
                     <span class="text-[9px] opacity-60 font-medium tracking-wider ${isMe ? 'text-teal-50' : 'text-gray-600'}">${time}</span>
                     ${statusIcon}
@@ -1261,8 +1354,8 @@ if (lastMessagesRes.success) {
             payload = cData.secure_url; mime = selectedFile.type;
         }
         
-        const res = await apiRequest('uploadMedia', { recipientEmail: activeContact, message: payload, mimeType: mime });
-        if (res.success) { input.value = ""; clearPreview(); if (activeContact) { delete drafts[activeContact];  delete fileDrafts[activeContact]; } const fileInput = document.getElementById('file-input'); if (fileInput) fileInput.value = '';  refreshChatHistory(); }
+        const res = await apiRequest('uploadMedia', { recipientEmail: activeContact, message: payload, mimeType: mime, replyTo: replyingTo ? replyingTo.messageId : null });
+        if (res.success) { input.value = ""; clearPreview(); cancelReply(); if (activeContact) { delete drafts[activeContact];  delete fileDrafts[activeContact]; } const fileInput = document.getElementById('file-input'); if (fileInput) fileInput.value = '';  refreshChatHistory(); }
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
 
@@ -1301,6 +1394,103 @@ if (res.success) {
         document.body.classList.remove('chat-active');
         document.getElementById('chat-area').classList.remove('active');
     }
+
+    // Show context menu on long press or right click
+function showMessageContext(event, messageData) {
+    event.preventDefault();
+    contextMenuMessage = messageData;
+    
+    const menu = document.getElementById('message-context-menu');
+    menu.style.left = event.pageX + 'px';
+    menu.style.top = event.pageY + 'px';
+    menu.classList.remove('hidden');
+    
+    // Hide menu on click outside
+    setTimeout(() => {
+        document.addEventListener('click', hideContextMenu);
+    }, 100);
+}
+
+function hideContextMenu() {
+    document.getElementById('message-context-menu').classList.add('hidden');
+    document.removeEventListener('click', hideContextMenu);
+}
+
+// Set reply
+function replyToMessage() {
+    if (!contextMenuMessage || !activeContact) return;
+    
+    replyingTo = {
+        messageId: contextMenuMessage.id,
+        sender: contextMenuMessage.sender === currentUserEmail ? 'You' : contextMenuMessage.senderName,
+        message: contextMenuMessage.message,
+        mimeType: contextMenuMessage.mimeType
+    };
+    
+    // Show reply preview
+    const preview = document.getElementById('reply-preview');
+    document.getElementById('reply-sender').innerText = `Replying to ${replyingTo.sender}`;
+    
+    // Show message snippet
+    let messageText = replyingTo.message;
+    if (replyingTo.mimeType && replyingTo.mimeType !== 'text/plain') {
+    if (replyingTo.mimeType) {
+        if (replyingTo.mimeType.includes('image')) messageText = '📷 Photo';
+        else if (replyingTo.mimeType.includes('video')) messageText = '🎥 Video';
+        else if (replyingTo.mimeType.includes('audio')) messageText = '🎤 Voice message';
+        else messageText = '📎 Attachment';
+    } }
+    document.getElementById('reply-message').innerText = messageText;
+    
+    preview.classList.remove('hidden');
+    
+    // Focus input
+    document.getElementById('msg-input').focus();
+    hideContextMenu();
+}
+
+function cancelReply() {
+    replyingTo = null;
+    document.getElementById('reply-preview').classList.add('hidden');
+}
+
+ let touchTimer = null;
+
+function handleTouchStart(event, messageData) {
+    event.preventDefault();
+    touchTimer = setTimeout(() => {
+        showMessageContext(event, messageData);
+    }, 500); // 500ms long press
+}
+
+function handleTouchEnd() {
+    clearTimeout(touchTimer);
+}
+
+function jumpToMessage(messageId) {
+    console.log('Attempting to jump to message:', messageId);
+    
+    if (!messageId) {
+        console.log('No message ID provided');
+        return;
+    }
+    
+    // Try multiple selectors
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    
+    if (messageElement) {
+        console.log('Found message element:', messageElement);
+        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        messageElement.classList.add('bg-teal-500/20', 'transition-colors', 'duration-100');
+        setTimeout(() => {
+            messageElement.classList.remove('bg-teal-500/20');
+        }, 200);
+    } else {
+        console.log('Message element not found with ID:', messageId);
+        console.log('Available message IDs:', 
+            Array.from(document.querySelectorAll('[data-message-id]')).map(el => el.dataset.messageId));
+    }
+}
 
     // ===== CALL SYSTEM =====
     function initCallSystem() {
@@ -1915,70 +2105,274 @@ function performLocalCleanup() {
 document.getElementById('msg-input').addEventListener('input', saveDraft);
 
 
-    // Add touch drag functionality for mobile
+// Camera switching variables
+let currentCamera = 'user'; // 'user' for front, 'environment' for back
+let videoTracks = null;
+
+// Touch drag functionality with boundary limits
 let touchStartX = 0;
 let touchStartY = 0;
 let videoElement = null;
+let isDragging = false;
 
 function handleVideoTouchStart(event) {
     event.preventDefault();
+    event.stopPropagation();
+    
     videoElement = document.getElementById('local-video');
     const touch = event.touches[0];
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
     
-    // Get current position
+    // Get current position (default to top-right if not set)
     const rect = videoElement.getBoundingClientRect();
-    videoElement.dataset.startLeft = rect.left;
-    videoElement.dataset.startTop = rect.top;
+    videoElement.dataset.startLeft = rect.left || (window.innerWidth - videoElement.offsetWidth - 20);
+    videoElement.dataset.startTop = rect.top || 20;
+    
+    // Store original dimensions for boundary calculations
+    videoElement.dataset.width = videoElement.offsetWidth;
+    videoElement.dataset.height = videoElement.offsetHeight;
+    
+    isDragging = true;
 }
 
 function handleVideoTouchMove(event) {
     event.preventDefault();
-    if (!videoElement) return;
+    event.stopPropagation();
+    
+    if (!isDragging || !videoElement) return;
     
     const touch = event.touches[0];
     const deltaX = touch.clientX - touchStartX;
     const deltaY = touch.clientY - touchStartY;
     
     // Calculate new position
-    const newLeft = parseFloat(videoElement.dataset.startLeft) + deltaX;
-    const newTop = parseFloat(videoElement.dataset.startTop) + deltaY;
+    let newLeft = parseFloat(videoElement.dataset.startLeft) + deltaX;
+    let newTop = parseFloat(videoElement.dataset.startTop) + deltaY;
     
-    // Constrain to screen bounds
-    const maxLeft = window.innerWidth - videoElement.offsetWidth - 10;
-    const maxTop = window.innerHeight - videoElement.offsetHeight - 10;
+    // Get video dimensions
+    const videoWidth = videoElement.offsetWidth;
+    const videoHeight = videoElement.offsetHeight;
     
-    videoElement.style.left = Math.min(Math.max(10, newLeft), maxLeft) + 'px';
-    videoElement.style.top = Math.min(Math.max(10, newTop), maxTop) + 'px';
+    // STRICT BOUNDARY CONSTRAINTS - Keep within screen edges
+    const minLeft = 10; // Minimum left position
+    const minTop = 10; // Minimum top position
+    const maxLeft = window.innerWidth - videoWidth - 10; // Maximum left position
+    const maxTop = window.innerHeight - videoHeight - 10; // Maximum top position
+    
+    // Apply boundaries
+    newLeft = Math.min(Math.max(minLeft, newLeft), maxLeft);
+    newTop = Math.min(Math.max(minTop, newTop), maxTop);
+    
+    // Apply position
+    videoElement.style.position = 'fixed';
+    videoElement.style.left = newLeft + 'px';
+    videoElement.style.top = newTop + 'px';
     videoElement.style.right = 'auto';
     videoElement.style.bottom = 'auto';
+    videoElement.style.zIndex = '1000';
+    
+    // Remove any transform that might interfere with positioning
+    videoElement.style.transform = 'none';
 }
 
 function handleVideoTouchEnd(event) {
     event.preventDefault();
+    event.stopPropagation();
+    
+    // Check for double tap
+    if (videoElement && isDragging) {
+        const touch = event.changedTouches[0];
+        const touchEndTime = new Date().getTime();
+        const lastTap = videoElement.dataset.lastTap || 0;
+        
+        if (touchEndTime - lastTap < 300) {
+            // Double tap detected
+            toggleLocalVideoSize();
+        }
+        
+        videoElement.dataset.lastTap = touchEndTime;
+    }
+    
+    isDragging = false;
     videoElement = null;
 }
 
-// Enhanced toggle function for mobile
+// Enhanced toggle function for double-click/tap
 function toggleLocalVideoSize() {
     const localVideo = document.getElementById('local-video');
     
-    if (window.innerWidth <= 640) {
-        // Mobile-specific toggle
-        localVideo.classList.toggle('enlarged-mobile');
-        
-        // Provide haptic feedback if available
-        if (window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(20);
-        }
+    // Check if it's enlarged or default
+    if (localVideo.classList.contains('enlarged')) {
+        // Return to default
+        localVideo.classList.remove('enlarged');
+        localVideo.style.width = '80px';
+        localVideo.style.height = '120px';
+        localVideo.style.bottom = '20px';
+        localVideo.style.right = '20px';
+        localVideo.style.top = 'auto';
+        localVideo.style.left = 'auto';
+        localVideo.style.transform = 'none';
     } else {
-        // Desktop toggle behavior
-        localVideo.classList.toggle('w-40');
-        localVideo.classList.toggle('h-56');
-        localVideo.classList.toggle('w-60');
-        localVideo.classList.toggle('h-80');
+        // Enlarge
+        localVideo.classList.add('enlarged');
+        localVideo.style.width = '160px';
+        localVideo.style.height = '240px';
+        
+        // Keep within boundaries after resize
+        setTimeout(() => {
+            const rect = localVideo.getBoundingClientRect();
+            if (rect.right > window.innerWidth - 10) {
+                localVideo.style.left = window.innerWidth - rect.width - 10 + 'px';
+            }
+            if (rect.bottom > window.innerHeight - 10) {
+                localVideo.style.top = window.innerHeight - rect.height - 10 + 'px';
+            }
+        }, 50);
     }
+    
+    // Haptic feedback for mobile
+    if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(20);
+    }
+}
+
+// Camera switching function
+async function switchCamera() {
+    if (!localStream) return;
+    
+    try {
+        // Stop current video tracks
+        localStream.getVideoTracks().forEach(track => track.stop());
+        
+        // Toggle camera
+        currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+        
+        // Get new stream with switched camera
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: currentCamera },
+            audio: true
+        });
+        
+        // Replace video track
+        const videoTrack = newStream.getVideoTracks()[0];
+        const audioTrack = newStream.getAudioTracks()[0];
+        
+        // Update local stream
+        localStream.removeTrack(localStream.getVideoTracks()[0]);
+        localStream.addTrack(videoTrack);
+        
+        // Update video element
+        const localVideo = document.getElementById('local-video');
+        localVideo.srcObject = localStream;
+        
+        // If in a call, replace the track in the peer connection
+        if (callState.currentCall && callState.currentCall.peerConnection) {
+            const sender = callState.currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+            if (sender) {
+                sender.replaceTrack(videoTrack);
+            }
+        }
+        
+        // Show feedback
+        showAlert("Camera Switched", `Now using ${currentCamera === 'user' ? 'front' : 'back'} camera`, "fa-camera");
+        
+    } catch (err) {
+        console.error("Camera switch failed:", err);
+        showAlert("Error", "Failed to switch camera");
+        // Revert camera state
+        currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+    }
+}
+
+// Add double-click for desktop
+function setupVideoEventListeners() {
+    const localVideo = document.getElementById('local-video');
+    
+    // Touch events for mobile
+    localVideo.addEventListener('touchstart', handleVideoTouchStart);
+    localVideo.addEventListener('touchmove', handleVideoTouchMove);
+    localVideo.addEventListener('touchend', handleVideoTouchEnd);
+    
+    // Double-click for desktop
+    localVideo.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        toggleLocalVideoSize();
+    });
+    
+    // Mouse drag for desktop (optional)
+    let isMouseDown = false;
+    let mouseStartX, mouseStartY;
+    let mouseStartLeft, mouseStartTop;
+    
+    localVideo.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isMouseDown = true;
+        mouseStartX = e.clientX;
+        mouseStartY = e.clientY;
+        
+        const rect = localVideo.getBoundingClientRect();
+        mouseStartLeft = rect.left;
+        mouseStartTop = rect.top;
+        
+        localVideo.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isMouseDown) return;
+        e.preventDefault();
+        
+        const deltaX = e.clientX - mouseStartX;
+        const deltaY = e.clientY - mouseStartY;
+        
+        let newLeft = mouseStartLeft + deltaX;
+        let newTop = mouseStartTop + deltaY;
+        
+        // Apply boundaries
+        const minLeft = 10;
+        const minTop = 10;
+        const maxLeft = window.innerWidth - localVideo.offsetWidth - 10;
+        const maxTop = window.innerHeight - localVideo.offsetHeight - 10;
+        
+        newLeft = Math.min(Math.max(minLeft, newLeft), maxLeft);
+        newTop = Math.min(Math.max(minTop, newTop), maxTop);
+        
+        localVideo.style.position = 'fixed';
+        localVideo.style.left = newLeft + 'px';
+        localVideo.style.top = newTop + 'px';
+        localVideo.style.right = 'auto';
+        localVideo.style.bottom = 'auto';
+    });
+    
+    document.addEventListener('mouseup', () => {
+        isMouseDown = false;
+        localVideo.style.cursor = 'move';
+    });
+}
+
+// Add camera switch button to call controls
+function addCameraSwitchButton() {
+    const controlsDiv = document.querySelector('#call-modal .flex.gap-4');
+    if (controlsDiv && !document.getElementById('camera-switch-btn')) {
+        const switchBtn = document.createElement('button');
+        switchBtn.id = 'camera-switch-btn';
+        switchBtn.onclick = switchCamera;
+        switchBtn.className = 'w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-2xl text-white/80 hover:bg-white/20 hover:text-white hover:scale-110 transition-all';
+        switchBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        
+        // Insert before fullscreen button
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        if (fullscreenBtn) {
+            controlsDiv.insertBefore(switchBtn, fullscreenBtn);
+        }
+    }
+}
+
+// Call this when call modal opens
+function showCallModal() {
+    document.getElementById('call-modal').style.display = 'flex';
+    addCameraSwitchButton();
+    setupVideoEventListeners();
 }
 
 // Optional: Auto-adjust based on connection quality
