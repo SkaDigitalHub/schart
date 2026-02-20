@@ -12,14 +12,11 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: radial-gradient(circle at 10% 30%, #0A1922, #0B1A26);
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
+            overflow: hidden;
             color-scheme: light;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
         }
 
         /* ---------- premium spiritual tokens ---------- */
@@ -102,12 +99,7 @@
 }
 
 #chat-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Important for containing the chat */
-    position: relative;
-    border-radius: 1.5rem;
+    display: none;
 }
 
 #chat-area.active {
