@@ -332,7 +332,7 @@ body.chat-active #chat-area {
         <div class="w-full max-w-md glass-panel rounded-[40px] p-10 text-center border border-white/5 shadow-[0_30px_50px_-20px_rgba(0,0,0,0.8)]">
             <div class="flex justify-center mb-6">
                 <div class="w-20 h-20 rounded-full bg-gradient-to-br from-teal-400/20 to-emerald-400/20 flex items-center justify-center border border-white/20 backdrop-blur-lg">
-                    <img src="ekklo.png" alt="Logo" class="w-full h-full object-cover">
+                     <img src="ekklo.png" alt="Logo" class="w-full h-full object-cover mb-3">
                 </div>
             </div>
             <h2 class="text-4xl font-bold text-white tracking-tight mb-2">Ekklo</h2>
@@ -499,7 +499,7 @@ body.chat-active #chat-area {
                 </div>
 
                 <!-- FOOTER -->
-                <footer class="p-2 sm:p-4 bg-[#0C1C24]/70 backdrop-blur-2xl border-t border-white/5 flex items-center gap-1 sm:gap-3 shrink-0">
+                <footer class="p-2 sm:p-4 bg-[#0C1C24]/70 backdrop-blur-2xl border-t border-white/5 flex items-center gap-1 sm:gap-3 shrink-0 mb-3">
                     <label class="p-2 sm:p-3 cursor-pointer text-white/50 hover:text-teal-300 transition bg-white/5 rounded-full backdrop-blur-sm hover:bg-teal-500/10 flex-shrink-0">
                         <i class="fas fa-paperclip text-lg sm:text-xl"></i>
                         <input type="file" id="file-input" class="hidden" onchange="handleFileSelection(this)">
@@ -579,7 +579,7 @@ body.chat-active #chat-area {
 
 <script>
     // ===== CORE CONFIGURATION =====
-    const API_URL = "https://script.google.com/macros/s/AKfycbwzhnHGVeyMG0yecmHrG_SiMql22oSrZugOX2YPO8DF-rJaYn-vlnaRx-x-IVngToCe/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbw8QNPp60wD8rQ2XykwmmfECFduo2J9RUVO5vJuhcNvwLSPIu1V92pm2pkbbUrKB0Rw/exec"; 
     const CLOUD_NAME = "dprnytwp9";
     const UPLOAD_PRESET = "AppPortal-Chat";
 
@@ -589,6 +589,7 @@ body.chat-active #chat-area {
     let lastMsgCount = 0, userStatuses = {}, typingTimer;
     let mediaRecorder, audioChunks = [], isRecording = false, recordStartTime, timerInterval;
     let allUsersGlobal = [];
+    let messageStatuses = {};
 
     // ===== CALL SYSTEM VARIABLES =====
     const ringtone = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
@@ -620,6 +621,9 @@ body.chat-active #chat-area {
     let isMuted = false;
     let isVideoOff = false;
     let isSpeakerOn = true;
+
+    let drafts = {}; // Store message drafts per contact
+    let fileDrafts = {}; // Store file drafts per contact
 
     // ===== API HELPER =====
     async function apiRequest(f, d) {
@@ -694,74 +698,106 @@ body.chat-active #chat-area {
         }
     }
 
-    // ===== CONTACTS & NOTIFICATIONS =====
-    async function refreshUserList() {
-        const usersRes = await apiRequest('getAllUsers', {});
-        const unreadRes = await apiRequest('getNotifications', {});
-        
-        if (!usersRes.success) return;
+   // ===== CONTACTS & NOTIFICATIONS =====
+async function refreshUserList() {
+    const usersRes = await apiRequest('getAllUsers', {});
+    const unreadRes = await apiRequest('getNotifications', {});
+    const lastMessagesRes = await apiRequest('getLastMessages', {});
+    console.log('Raw lastMessages response:', JSON.stringify(lastMessagesRes));
 
-        const myEmail = currentUser.email;
-
-        const counts = {};
-        if (unreadRes.messages) {
-            unreadRes.messages.forEach(m => { counts[m[1]] = (counts[m[1]] || 0) + 1; });
+    // Create a map of last messages
+    const lastMessagesMap = {};
+if (lastMessagesRes.success) {
+    lastMessagesRes.messages.forEach(msg => {
+        // Check if it's media (has mimetype and URL)
+        if (msg.mimeType && msg.message && typeof msg.message === 'string' && msg.message.startsWith('http')) {
+            if (msg.mimeType.includes('image')) {
+                lastMessagesMap[msg.sender] = '📷 Photo';
+            } else if (msg.mimeType.includes('video')) {
+                lastMessagesMap[msg.sender] = '🎥 Video';
+            } else if (msg.mimeType.includes('audio')) {
+                lastMessagesMap[msg.sender] = '🎤 Voice message';
+            } else {
+                lastMessagesMap[msg.sender] = '📎 Attachment';
+            }
+        } else {
+            // Regular text message
+            lastMessagesMap[msg.sender] = msg.message;
         }
+    });
+}
+    
+    if (!usersRes.success) return;
 
-        document.getElementById('user-list').innerHTML = usersRes.users
-            .filter(u => u.email !== myEmail)
-            .map(u => {
-                const escapedName = (u.name || '').replace(/'/g, "\\'");
-                const escapedPic = (u.profilePic || '').replace(/'/g, "\\'");
-                const unreadCount = counts[u.email] || 0;
-                const isActive = activeContact === u.email;
+    const myEmail = currentUser.email;
+
+    const counts = {};
+    if (unreadRes.messages) {
+        unreadRes.messages.forEach(m => { counts[m[1]] = (counts[m[1]] || 0) + 1; });
+    }
+
+    document.getElementById('user-list').innerHTML = usersRes.users
+        .filter(u => u.email !== myEmail)
+        .map(u => {
+            const escapedName = (u.name || '').replace(/'/g, "\\'");
+            const escapedPic = (u.profilePic || '').replace(/'/g, "\\'");
+            const unreadCount = counts[u.email] || 0;
+            const isActive = activeContact === u.email;
+            
+            let lastActiveTime = '';
+            if (u.lastActive) {
+                const date = parseLastActive(u.lastActive);
+                const now = new Date();
+                const diffMins = Math.floor((now - date) / 60000);
+                const diffHours = Math.floor((now - date) / 3600000);
+                const diffDays = Math.floor((now - date) / 86400000);
                 
-                let lastActiveTime = '';
-                if (u.lastActive) {
-                    const date = parseLastActive(u.lastActive);
-                    const now = new Date();
-                    const diffMins = Math.floor((now - date) / 60000);
-                    const diffHours = Math.floor((now - date) / 3600000);
-                    const diffDays = Math.floor((now - date) / 86400000);
+                if (diffMins < 1) lastActiveTime = 'now';
+                else if (diffMins < 60) lastActiveTime = `${diffMins}m ago`;
+                else if (diffHours < 24) lastActiveTime = `${diffHours}h ago`;
+                else if (diffDays < 7) lastActiveTime = `${diffDays}d ago`;
+                else lastActiveTime = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            }
+
+            const isOnline = u.lastActive && (new Date() - parseLastActive(u.lastActive)) < 120000;
+            const onlineDotColor = isOnline ? 'bg-emerald-500' : 'bg-gray-400';
+            
+            // Get last message for this user
+            const lastMessage = lastMessagesMap[u.email];
+            const displayMessage = lastMessage ? 
+                (lastMessage.length > 30 ? lastMessage.substring(0, 30) + '...' : lastMessage) : 
+                'Tap to message';
+
+            return `
+                <div onclick="selectContact('${u.email}', '${escapedName}', '${escapedPic}')" 
+                     class="chat-card flex items-center justify-between px-4 py-3 cursor-pointer transition-all w-full ${isActive ? 'active' : 'hover:bg-white/5'}">
                     
-                    if (diffMins < 1) lastActiveTime = 'now';
-                    else if (diffMins < 60) lastActiveTime = `${diffMins}m ago`;
-                    else if (diffHours < 24) lastActiveTime = `${diffHours}h ago`;
-                    else if (diffDays < 7) lastActiveTime = `${diffDays}d ago`;
-                    else lastActiveTime = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                }
-
-                const isOnline = u.lastActive && (new Date() - parseLastActive(u.lastActive)) < 120000;
-                const onlineDotColor = isOnline ? 'bg-emerald-500' : 'bg-gray-400';
-
-                return `
-                    <div onclick="selectContact('${u.email}', '${escapedName}', '${escapedPic}')" 
-                         class="chat-card flex items-center justify-between px-4 py-3 cursor-pointer transition-all w-full ${isActive ? 'active' : 'hover:bg-white/5'}">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="relative flex-shrink-0">
+                            ${getAvatarHTML(u.name, u.profilePic, "w-12 h-12 text-lg")}
+                            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 ${onlineDotColor} border-2 border-[#0F1F28] rounded-full shadow-md"></span>
+                        </div>
                         
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <div class="relative flex-shrink-0">
-                                ${getAvatarHTML(u.name, u.profilePic, "w-12 h-12 text-lg")}
-                                <span class="absolute bottom-0 right-0 w-3.5 h-3.5 ${onlineDotColor} border-2 border-[#0F1F28] rounded-full shadow-md"></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <h3 class="contact-name text-sm">${u.name.split(' ')[0]}</h3>
+                                <span class="timestamp text-[0.65rem] font-light">${lastActiveTime}</span>
                             </div>
-                            
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center justify-between">
-                                    <h3 class="contact-name text-sm">${u.name.split(' ')[0]}</h3>
-                                    <span class="timestamp text-[0.65rem] font-light">${lastActiveTime}</span>
-                                </div>
-                                <div class="flex items-center justify-between mt-0.5">
-                                    <p class="last-message truncate pr-2">
-                                        <span class="text-teal-300/70 mr-1"><i class="fas fa-check-double text-[10px]"></i></span>
-                                        ${u.status || 'Tap to message'}
-                                    </p>
-                                    ${unreadCount > 0 ? `<span class="unread-badge ml-2">${unreadCount}</span>` : ''}
-                                </div>
+                            <div class="flex items-center justify-between mt-0.5">
+                                <p class="last-message truncate pr-2">
+                                    <span class="text-teal-300/70 mr-1"><i class="fas fa-check-double text-[10px]"></i></span>
+                                    ${u.isTyping ? 
+                                    '<span class="text-teal-400 font-medium flex items-center gap-1"><i class="fas fa-pencil-alt text-[8px] animate-pulse"></i> typing...</span>' : 
+                                    displayMessage}
+                                </p>
+                                ${unreadCount > 0 ? `<span class="unread-badge ml-2">${unreadCount}</span>` : ''}
                             </div>
                         </div>
                     </div>
-                `;
-            }).join('');
-    }
+                </div>
+            `;
+        }).join('');
+}
 
     function timeAgo(date) {
         if (typeof date === 'number' || !isNaN(date)) {
@@ -991,6 +1027,37 @@ body.chat-active #chat-area {
 
     // ===== CHAT HISTORY & MESSAGING =====
     function selectContact(e, n, pic) {
+        // Save current contact's draft before switching
+    if (activeContact) {
+        drafts[activeContact] = document.getElementById('msg-input').value;
+        if (selectedFile) {
+            fileDrafts[activeContact] = {
+                file: selectedFile,
+                name: selectedFile.name,
+                size: selectedFile.size,
+                type: selectedFile.type
+            };
+        }
+    }
+    
+    // Switch to new contact
+    activeContact = e;
+    
+    // Restore new contact's draft
+    document.getElementById('msg-input').value = drafts[e] || '';
+    
+    if (fileDrafts[e]) {
+        selectedFile = fileDrafts[e].file;
+        document.getElementById('media-preview').classList.remove('hidden');
+        document.getElementById('preview-name').innerText = fileDrafts[e].name;
+        document.getElementById('preview-size').innerText = (fileDrafts[e].size/1024).toFixed(1) + " KB";
+        document.getElementById('preview-icon').innerHTML = '<i class="fas fa-file-arrow-up"></i>';
+    } else {
+        clearPreview();
+    }
+
+     apiRequest('markMessagesAsDelivered', {});
+
         showChatArea();
 
         activeContact = e; 
@@ -1019,7 +1086,9 @@ body.chat-active #chat-area {
         document.getElementById('chat-header-status').innerText = isOnline ? "Online" : "Last seen " + timeAgo(lastActiveDate);
         
         apiRequest('markAsRead', { contactEmail: e });
-        refreshChatHistory();
+        setTimeout(() => {
+    refreshChatHistory();
+        }, 300); // 300ms delay
         refreshUserList();
     }
 
@@ -1047,31 +1116,89 @@ body.chat-active #chat-area {
     }
 
     async function refreshChatHistory() {
-        if (!activeContact) return;
-        const res = await apiRequest('getChatHistory', { contactEmail: activeContact });
-        if (!res.success || res.messages.length === lastMsgCount) return;
-        
-        lastMsgCount = res.messages.length;
-        const win = document.getElementById('chat-window');
-        win.innerHTML = res.messages.map(m => {
-            const isMe = m[1] === currentUserEmail;
-            const body = m[2], mime = m[5] || 'text/plain', time = new Date(m[3]).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            
-            let html = body;
-            if (mime.includes('image')) html = `<img src="${body}" class="media-content rounded-xl cursor-pointer shadow-lg" onclick="window.open('${body}')">`;
-            else if (mime.includes('video')) html = `<video controls class="media-content rounded-xl shadow-lg"><source src="${body}"></video>`;
-            else if (mime.includes('audio')) html = `<audio controls class="w-48 h-8 mt-1"><source src="${body}"></audio>`;
-            else if (body.startsWith('http')) html = `<a href="${body}" target="_blank" class="bg-teal-800/40 flex items-center gap-2 text-sm underline italic text-teal-100 p-2 rounded-xl"><i class="fas fa-file-download"></i> Attachment</a>`;
-            
-            return `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-                <div class="message-bubble ${isMe ? 'sent' : 'received'}">
-                    ${html}
-                    <div class="text-[9px] mt-1.5 opacity-60 text-right font-medium tracking-wider ${isMe ? 'text-teal-50' : 'text-gray-600'}">${time}</div>
-                </div>
-            </div>`;
-        }).join('');
-        win.scrollTop = win.scrollHeight;
+    if (!activeContact) return;
+
+    const statusCheck = await apiRequest('getMessageStatus', { contactEmail: activeContact });
+    if (statusCheck.changed) {
+        // Only update the status icons, not reload all messages
+        updateMessageStatusIcons(statusCheck.statuses);
+        return;
     }
+
+    const res = await apiRequest('getChatHistory', { contactEmail: activeContact });
+    if (!res.success || res.messages.length === lastMsgCount) return;
+
+    if (activeContact && res.messages.length > 0) {
+        apiRequest('markAsRead', { contactEmail: activeContact });
+        apiRequest('markMessagesAsDelivered', {});
+    }
+    
+    lastMsgCount = res.messages.length;
+    const win = document.getElementById('chat-window');
+    
+    // Group messages by date
+    let lastDate = '';
+    let html = '';
+    
+    res.messages.forEach(m => {
+        const messageDate = new Date(m[3]).toDateString();
+        const today = new Date().toDateString();
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+        
+        // Add date header if date changes
+        if (messageDate !== lastDate) {
+            let dateDisplay = '';
+            if (messageDate === today) {
+                dateDisplay = 'Today';
+            } else if (messageDate === yesterday) {
+                dateDisplay = 'Yesterday';
+            } else {
+                dateDisplay = new Date(m[3]).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+            }
+            
+            html += `<div class="text-center my-4">
+                <span class="text-xs bg-white/10 px-3 py-1 rounded-full text-white/60">${dateDisplay}</span>
+            </div>`;
+            lastDate = messageDate;
+        }
+        
+        const isMe = m[1] === currentUserEmail;
+        const body = m[2], mime = m[5] || 'text/plain', time = new Date(m[3]).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+        const readStatus = m[4] || 'unread';
+        const deliveryStatus = m[6] || 'sent';
+        
+        let statusIcon = '';
+        if (isMe) {
+            if (readStatus === 'read') {
+                statusIcon = '<i class="fas fa-check-double text-blue-400 ml-1 text-xs"></i>';
+            } else if (deliveryStatus === 'delivered') {
+                statusIcon = '<i class="fas fa-check-double text-gray-400 ml-1 text-xs"></i>';
+            } else {
+                statusIcon = '<i class="fas fa-check text-gray-400 ml-1 text-xs"></i>';
+            }
+        }
+        
+        let messageHtml = body;
+        if (mime.includes('image')) messageHtml = `<img src="${body}" class="media-content rounded-xl cursor-pointer shadow-lg" onclick="window.open('${body}')">`;
+        else if (mime.includes('video')) messageHtml = `<video controls class="media-content rounded-xl shadow-lg"><source src="${body}"></video>`;
+        else if (mime.includes('audio')) messageHtml = `<audio controls class="w-48 h-8 mt-1"><source src="${body}"></audio>`;
+        else if (body.startsWith('http')) messageHtml = `<a href="${body}" target="_blank" class="bg-teal-800/40 flex items-center gap-2 text-sm underline italic text-teal-100 p-2 rounded-xl"><i class="fas fa-file-download"></i> Attachment</a>`;
+        
+        html += `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+            <div class="message-bubble ${isMe ? 'sent' : 'received'}">
+                ${messageHtml}
+                <div class="flex items-center justify-end gap-1 mt-1.5">
+                    <span class="text-[9px] opacity-60 font-medium tracking-wider ${isMe ? 'text-teal-50' : 'text-gray-600'}">${time}</span>
+                    ${statusIcon}
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    win.innerHTML = html;
+    win.scrollTop = win.scrollHeight;
+}
 
     async function updateTypingIndicator() {
         if (!activeContact) return;
@@ -1135,9 +1262,21 @@ body.chat-active #chat-area {
         }
         
         const res = await apiRequest('uploadMedia', { recipientEmail: activeContact, message: payload, mimeType: mime });
-        if (res.success) { input.value = ""; clearPreview(); refreshChatHistory(); }
+        if (res.success) { input.value = ""; clearPreview(); if (activeContact) { delete drafts[activeContact];  delete fileDrafts[activeContact]; } const fileInput = document.getElementById('file-input'); if (fileInput) fileInput.value = '';  refreshChatHistory(); }
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+
+        // After sending message, check if receiver is online
+if (res.success) {
+    // Check if receiver is online
+    const receiver = allUsersGlobal.find(u => u.email === activeContact);
+    const isReceiverOnline = receiver?.lastActive && (new Date() - parseLastActive(receiver.lastActive)) < 120000;
+    
+    // Update status based on online status
+    setTimeout(() => {
+        refreshChatHistory(); // Refresh to show updated status
+    }, 500);
+}
     }
 
     // ===== HELPER: Parse Last Active =====
@@ -1717,6 +1856,15 @@ function performLocalCleanup() {
     function handleFileSelection(i) {
         selectedFile = i.files[0];
         if(!selectedFile) return;
+
+        if (activeContact) {
+        fileDrafts[activeContact] = {
+            file: selectedFile,
+            name: selectedFile.name,
+            size: selectedFile.size,
+            type: selectedFile.type
+        };
+    }
         document.getElementById('media-preview').classList.remove('hidden');
         document.getElementById('preview-name').innerText = selectedFile.name;
         document.getElementById('preview-size').innerText = (selectedFile.size/1024).toFixed(1) + " KB";
@@ -1752,9 +1900,20 @@ function performLocalCleanup() {
         
         setInterval(() => apiRequest('heartbeat', {}), 60000);
         setInterval(refreshUserList, 5000);
-        setInterval(() => { refreshChatHistory(); updateTypingIndicator(); }, 3000);
+        setInterval(() => { if (activeContact) {refreshChatHistory(); if (document.getElementById('chat-area').classList.contains('active')) { apiRequest('markAsRead', { contactEmail: activeContact }); } } updateTypingIndicator(); }, 3000);
         setInterval(refreshStatusUI, 5000);
+        setInterval(() => { if (currentUserEmail) { apiRequest('markMessagesAsDelivered', {}); } }, 3000);
     }
+
+    function saveDraft() {
+    if (!activeContact) return;
+    const msgInput = document.getElementById('msg-input');
+    drafts[activeContact] = msgInput.value;
+}
+
+// Add this to your input event listener
+document.getElementById('msg-input').addEventListener('input', saveDraft);
+
 
     // Add touch drag functionality for mobile
 let touchStartX = 0;
