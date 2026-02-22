@@ -667,6 +667,18 @@ body.chat-active #chat-area {
     border: none !important;
 }
 
+/* Better mobile touch for audio player */
+@media (max-width: 640px) {
+    .audio-play-btn {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .audio-play-btn i {
+        font-size: 18px;
+    }
+}
+
 /* For images only - no background, just bottom padding */
 .message-bubble:has(img.media-content) {
     padding: 0 0 12px 0 !important; /* No padding on top/sides, only bottom */
@@ -1984,7 +1996,7 @@ document.getElementById('user-list').innerHTML = filteredUsers.map(u => {
             
             replyHtml = `
                 <div class="text-xs opacity-70 mb-1 pb-1 border-l-2 border-teal-400 pl-2 truncate cursor-pointer hover:bg-teal-500/10 transition rounded"
-         onclick="jumpToMessage('${replyToId}')">
+         onclick="event.stopPropagation(); jumpToMessage('${replyToId}')">
                     <span class="font-bold text-teal-300">↪ ${replySender}</span>: ${replyText}
                 </div>
             `;
@@ -2351,7 +2363,7 @@ function toggleEnterToSend() {
 }
 
 
-  // Audio player functions
+// Audio player functions
 function toggleAudio(btn, src) {
     const player = btn.closest('.audio-player-glass');
     const icon = btn.querySelector('i');
@@ -2370,6 +2382,9 @@ function toggleAudio(btn, src) {
         audio.style.display = 'none';
         player.appendChild(audio);
         
+        // Force load metadata for mobile
+        audio.load();
+        
         // Set up audio events
         audio.addEventListener('loadedmetadata', () => {
             durationEl.textContent = formatTime(audio.duration);
@@ -2386,12 +2401,32 @@ function toggleAudio(btn, src) {
             progressFill.style.width = '0%';
             currentTimeEl.textContent = '0:00';
         });
+
+        // Mobile: Handle errors
+        audio.addEventListener('error', (e) => {
+            console.log("Audio error:", e);
+            showAlert('Playback Error', 'Could not load audio');
+        });
     }
     
-    // Toggle play/pause
+    // Toggle play/pause with mobile support
     if (audio.paused) {
-        audio.play();
-        icon.className = 'fas fa-pause';
+        // Mobile requires user interaction - play returns a promise
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                icon.className = 'fas fa-pause';
+            }).catch(error => {
+                console.log("Mobile playback failed:", error);
+                // Try once more with user interaction
+                setTimeout(() => {
+                    audio.play().catch(e => {
+                        showAlert('Cannot Play', 'Tap again to play audio');
+                    });
+                }, 100);
+            });
+        }
     } else {
         audio.pause();
         icon.className = 'fas fa-play';
@@ -2411,6 +2446,7 @@ function seekAudio(event, bar) {
 }
 
 function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -2468,13 +2504,16 @@ function formatTime(seconds) {
             conn.on('open', () => {
                 conn.send(JSON.stringify({ type: 'busy' }));
                 setTimeout(() => { conn.close(); incomingCall.close(); }, 500);
-                ringtone.play().catch(e => console.log("Audio play blocked"));
-                showIncomingCallUI();
             });
             return;
         }
         callState.incomingCall = incomingCall;
         callState.isIncoming = true;
+
+         // PLAY RINGTONE FOR RECEIVER
+    ringtone.loop = true;
+    ringtone.play().catch(e => console.log("Audio play blocked:", e));
+
         showIncomingCallUI(); // Your existing UI trigger
 
         // Try to find the caller's name
