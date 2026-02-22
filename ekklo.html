@@ -25,6 +25,82 @@
         .chat-container::-webkit-scrollbar-track { background: rgba(15, 30, 40, 0.2); border-radius: 20px; margin-block: 8px; }
         .chat-container::-webkit-scrollbar-thumb { background: #14B8A6; border-radius: 20px; opacity: 0.7; }
 
+       /* Set minimum height for main content area */
+#app {
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Dynamic viewport height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#main-chat {
+    flex: 1;
+    min-height: 0; /* Important for flex children */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Ensure content area takes available space */
+.flex-1.overflow-hidden {
+    min-height: 0;
+    flex: 1;
+}
+
+/* For the chat window and user list */
+#chat-window,
+#user-list,
+#call-logs-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Fix footer visibility */
+footer {
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+       
+        /* Modern scrollbar for main chat */
+#main-chat .overflow-y-auto,
+#chat-window,
+#user-list,
+#call-logs-container {
+    scrollbar-width: thin;
+    scrollbar-color: #14B8A6 #0C1C24;
+}
+
+#main-chat .overflow-y-auto::-webkit-scrollbar,
+#chat-window::-webkit-scrollbar,
+#user-list::-webkit-scrollbar,
+#call-logs-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+#main-chat .overflow-y-auto::-webkit-scrollbar-track,
+#chat-window::-webkit-scrollbar-track,
+#user-list::-webkit-scrollbar-track,
+#call-logs-container::-webkit-scrollbar-track {
+    background: #0C1C24;
+}
+
+#main-chat .overflow-y-auto::-webkit-scrollbar-thumb,
+#chat-window::-webkit-scrollbar-thumb,
+#user-list::-webkit-scrollbar-thumb,
+#call-logs-container::-webkit-scrollbar-thumb {
+    background: #14B8A6;
+    border-radius: 20px;
+}
+
+#main-chat .overflow-y-auto::-webkit-scrollbar-thumb:hover,
+#chat-window::-webkit-scrollbar-thumb:hover,
+#user-list::-webkit-scrollbar-thumb:hover,
+#call-logs-container::-webkit-scrollbar-thumb:hover {
+    background: #0D9488;
+}
+       
         /* ===== CHAT CARDS - MODERN WHATSAPP STYLE ===== */
 .chat-card {
     transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
@@ -105,6 +181,11 @@
 #chat-area.active {
     display: flex !important;
     flex-direction: column;
+}
+
+/* Hide bottom menu when chat is active */
+body.chat-active #bottom-menu {
+    display: none !important;
 }
 
 /* Call controls styling */
@@ -322,6 +403,334 @@ body.chat-active #chat-area {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
+
+/* Modern scrollbar for more menu */
+#more-menu .overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #14B8A6 #1E2F38;
+}
+
+#more-menu .overflow-y-auto::-webkit-scrollbar {
+    width: 4px;
+}
+
+#more-menu .overflow-y-auto::-webkit-scrollbar-track {
+    background: #1E2F38;
+}
+
+#more-menu .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #14B8A6;
+    border-radius: 20px;
+}
+
+#more-menu .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #0D9488;
+}
+
+/* Floating call mode */
+#call-modal.floating {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    width: 240px;
+    height: auto;
+    background: rgba(0,0,0,0.9);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    inset: auto; /* Override the fullscreen inset */
+    display: flex !important;
+    flex-direction: column;
+}
+
+#call-modal.floating .relative {
+    width: 100%;
+    height: 180px; /* Smaller height for floating */
+}
+
+#call-modal.floating .w-full.max-w-4xl {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    gap: 8px;
+}
+
+#call-modal.floating .flex.gap-4.mt-4 {
+    margin-top: 4px;
+    padding: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#call-modal.floating .absolute.top-4.left-4 {
+    top: 8px;
+    left: 8px;
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+#call-modal.floating button {
+    transform: scale(0.8);
+}
+
+/* Hide fullscreen button in floating mode */
+#call-modal.floating #fullscreen-btn {
+    display: none;
+}
+
+/* Modern scrollbar for message input */
+#msg-input {
+    scrollbar-width: thin;
+    scrollbar-color: #14B8A6 #0C1C24;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+#msg-input::-webkit-scrollbar {
+    width: 4px;
+}
+
+#msg-input::-webkit-scrollbar-track {
+    background: #0C1C24;
+    border-radius: 20px;
+}
+
+#msg-input::-webkit-scrollbar-thumb {
+    background: #14B8A6;
+    border-radius: 20px;
+}
+
+#msg-input::-webkit-scrollbar-thumb:hover {
+    background: #0D9488;
+}
+
+/* For Firefox */
+#msg-input {
+    scrollbar-width: thin;
+    scrollbar-color: #14B8A6 #0C1C24;
+}
+
+/* Modern Glassmorphism Audio Player */
+.audio-player-glass {
+    background: rgba(20, 30, 40, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 40px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 240px;
+    max-width: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Play/Pause Button */
+.audio-play-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #0F766E, #14B8A6);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.audio-play-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
+}
+
+.audio-play-btn:active {
+    transform: scale(0.95);
+}
+
+.audio-play-btn i {
+    color: white;
+    font-size: 14px;
+}
+
+/* Progress Container */
+.audio-progress-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Progress Bar */
+.audio-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.audio-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #14B8A6, #2DD4BF);
+    border-radius: 10px;
+    width: 0%;
+    position: relative;
+    box-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
+}
+
+/* Waveform Dots (decorative) */
+.audio-waveform {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 16px;
+    opacity: 0.5;
+}
+
+.audio-waveform span {
+    width: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    animation: waveform 1.5s infinite ease-in-out;
+}
+
+.audio-waveform span:nth-child(1) { height: 8px; animation-delay: 0s; }
+.audio-waveform span:nth-child(2) { height: 12px; animation-delay: 0.2s; }
+.audio-waveform span:nth-child(3) { height: 16px; animation-delay: 0.4s; }
+.audio-waveform span:nth-child(4) { height: 12px; animation-delay: 0.6s; }
+.audio-waveform span:nth-child(5) { height: 8px; animation-delay: 0.8s; }
+
+@keyframes waveform {
+    0%, 100% { opacity: 0.3; transform: scaleY(0.8); }
+    50% { opacity: 1; transform: scaleY(1.2); background: #14B8A6; }
+}
+/* Time Display */
+.audio-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: monospace;
+}
+
+/* Delete/Close Button */
+.audio-delete-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.audio-delete-btn:hover {
+    background: rgba(255, 80, 80, 0.2);
+    color: #ff6b6b;
+}
+
+/* Optional: Very subtle differentiation */
+.sent .audio-player-glass {
+    border-left: 2px solid #14B8A6;
+}
+
+.received .audio-player-glass {
+    border-right: 2px solid rgba(255,255,255,0.6);
+}
+
+/* Remove bubble background for audio messages */
+.message-bubble:has(.audio-player-glass) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Keep sent/received positioning but remove bubble */
+.sent:has(.audio-player-glass),
+.received:has(.audio-player-glass) {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* For images only - no background, just bottom padding */
+.message-bubble:has(img.media-content) {
+    padding: 0 0 12px 0 !important; /* No padding on top/sides, only bottom */
+    background: transparent !important;
+    backdrop-filter: none !important;
+    position: relative;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Sent image - teal bottom padding */
+.sent:has(img.media-content) {
+    background: transparent !important;
+    border-bottom: 12px solid #14B8A6 !important;
+    border-radius: 18px 18px 18px 18px !important;
+}
+
+/* Received image - white bottom padding */
+.received:has(img.media-content) {
+    background: transparent !important;
+    border-bottom: 12px solid rgba(255, 255, 255, 0.85) !important;
+    border-radius: 18px 18px 18px 18px !important;
+}
+
+/* Keep timestamp and status positioned on the colored bottom */
+.message-bubble:has(img.media-content) .flex.items-center {
+    position: absolute;
+    bottom: 2px;
+    right: 8px;
+    margin: 0;
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(4px);
+    border-radius: 16px;
+    z-index: 3;
+}
+
+/* Image styling */
+.media-content {
+    max-width: min(300px, 70vw);
+    max-height: min(400px, 60vh);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 16px 16px 0 0;
+    display: block;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .media-content {
+        max-width: min(250px, 85vw);
+        max-height: min(300px, 50vh);
+    }
+}
+
+@media (max-width: 360px) {
+    .media-content {
+        max-width: min(200px, 90vw);
+        max-height: min(250px, 45vh);
+    }
+}
+
+
     </style>
 </head>
 <body class="antialiased">
@@ -389,7 +798,7 @@ body.chat-active #chat-area {
     </div>
 
     <!-- █████████████████████████ SETTINGS – SERENE MODAL █████████████████████████ -->
-    <div id="settings-modal" class="modal-overlay hidden fixed inset-0 z-[1000] flex items-center justify-center">
+    <div id="settings-modal" class="modal-overlay hidden fixed inset-0 z-[3000] flex items-center justify-center">
         <div class="bg-[#0F1F28]/90 backdrop-blur-2xl w-full max-w-sm rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
             <div class="bg-gradient-to-b from-teal-900/50 to-transparent p-7 text-center border-b border-white/5">
                 <div id="settings-avatar-preview" class="flex justify-center mb-3"></div>
@@ -489,6 +898,149 @@ body.chat-active #chat-area {
             <!-- USER LIST -->
             <div id="user-list" class="flex-1 overflow-y-auto px-2 py-2" style="display: block;"></div>
 
+            <!-- BOTTOM MENU (only visible when user list is showing) -->
+<div id="bottom-menu" class="flex justify-around items-center px-6 py-3 bg-[#0C1C24]/80 backdrop-blur-xl border-t border-white/5 rounded-t-3xl mt-2">
+    <button onclick="showUserList()" class="flex flex-col items-center text-teal-400">
+        <i class="fas fa-comments text-xl"></i>
+        <span class="text-[10px] mt-1">Chats</span>
+    </button>
+    <button onclick="showCallLogs()" class="flex flex-col items-center text-white/60 hover:text-teal-400 transition">
+        <i class="fas fa-phone-alt text-xl"></i>
+        <span class="text-[10px] mt-1">Calls</span>
+    </button>
+    <button onclick="openMoreMenu()" class="flex flex-col items-center text-white/60 hover:text-teal-400 transition">
+        <i class="fas fa-ellipsis-h text-xl"></i>
+        <span class="text-[10px] mt-1">More</span>
+    </button>
+</div>
+
+<!-- Call Logs Container (hidden by default) -->
+<div id="call-logs-container" class="hidden flex-1 overflow-y-auto p-4">
+    <div class="text-center text-white/40 py-8">
+        <i class="fas fa-phone-alt text-4xl mb-3 opacity-30"></i>
+        <p class="text-sm">No call history yet</p>
+    </div>
+</div>
+
+
+<!--███████████████████████  More Menu Container (hidden by default) ███████████████████████ -->
+<div id="more-menu" class="hidden fixed inset-0 z-[2000] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);">
+    <div class="bg-[#0C1C24]/80 backdrop-blur-xl shadow-2xl border border-white/10 w-full max-w-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-[#14B8A6] to-[#0C1C24] p-3 flex items-center gap-3">
+    <!-- Profile Avatar with Online Indicator -->
+    <div class="relative flex-shrink-0">
+        <div id="more-menu-avatar" class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400/30 to-emerald-500/30 flex items-center justify-center font-bold text-2xl text-white border-2 border-white/30 shadow-lg">
+            <!-- Avatar will be populated by JS -->
+        </div>
+        <span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full shadow-md"></span>
+        </div>
+        <!-- User Name -->
+         <div class="flex-1">
+    <h4 id="more-menu-name" class="text-white font-bold text-lg mt-2">Loading...</h4></span>
+    </div>
+    <span class="text-white/50 text-xs" onclick="closeMoreMenu()" >Settings</span>
+</div>
+        
+        <!-- Options List -->
+        <div class="p-2 max-h-[70vh] overflow-y-auto">
+            <!-- Profile Settings -->
+            <div onclick="openSettings()" class="flex items-center gap-4 p-4 hover:bg-teal-500/10 rounded-xl transition cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                    <i class="fas fa-user text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-white font-medium">Profile</h4>
+                    <p class="text-white/40 text-xs">Update your name and photo</p>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+            
+            <!-- Notifications -->
+            <div onclick="openNotifications()" class="flex items-center gap-4 p-4 hover:bg-teal-500/10 rounded-xl transition cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                    <i class="fas fa-bell text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-white font-medium">Notifications</h4>
+                    <p class="text-white/40 text-xs">Manage alert preferences</p>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+            
+            <!-- Theme -->
+            <div onclick="openTheme()" class="flex items-center gap-4 p-4 hover:bg-teal-500/10 rounded-xl transition cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                    <i class="fas fa-palette text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-white font-medium">Theme</h4>
+                    <p class="text-white/40 text-xs">Light, dark, or system</p>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+
+            <!--Enter to send-->
+            <div onclick="toggleEnterToSend()" class="flex items-center gap-4 p-4 hover:bg-teal-500/10 rounded-xl transition cursor-pointer">
+    <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+        <i class="fas fa-keyboard text-xl"></i>
+    </div>
+    <div class="flex-1">
+        <h4 class="text-white font-medium">Enter to Send</h4>
+        <p class="text-white/40 text-xs">Tap to toggle on/off</p>
+    </div>
+    <i class="fas fa-chevron-right text-white/20"></i>
+</div>
+            
+            <!-- Privacy -->
+            <div onclick="openPrivacy()" class="flex items-center gap-4 p-4 hover:bg-teal-500/10 rounded-xl transition cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                    <i class="fas fa-lock text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-white font-medium">Privacy</h4>
+                    <p class="text-white/40 text-xs">Control your visibility</p>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+            
+            <!-- Help -->
+            <div onclick="openHelp()" class="flex items-center gap-4 p-4 hover:bg-teal-500/10 rounded-xl transition cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                    <i class="fas fa-question-circle text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-white font-medium">Help & Support</h4>
+                    <p class="text-white/40 text-xs">Get assistance</p>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+            
+            <!-- Divider -->
+            <div class="border-t border-white/10 my-2"></div>
+            
+            <!-- Logout -->
+            <div onclick="handleLogout()" class="flex items-center gap-4 p-4 hover:bg-red-500/10 rounded-xl transition cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+                    <i class="fas fa-sign-out-alt text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-white font-medium">Logout</h4>
+                    <p class="text-white/40 text-xs">Sign out of your account</p>
+                </div>
+                <i class="fas fa-chevron-right text-white/20"></i>
+            </div>
+        </div>
+        
+        <!-- Close button -->
+        <div class="p-4 border-t border-white/5">
+            <button onclick="closeMoreMenu()" class="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-medium transition">
+                <i class="fas fa-times mr-2"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
+
             <!-- CHAT WINDOW - Shown/hidden -->
             <div id="chat-area" class="flex-1 flex flex-col overflow-hidden bg-soft-radial relative hidden">
                 <!-- Back button -->
@@ -555,7 +1107,8 @@ body.chat-active #chat-area {
                         <i class="fas fa-paperclip text-lg sm:text-xl"></i>
                         <input type="file" id="file-input" class="hidden" onchange="handleFileSelection(this)">
                     </label>
-                    <input type="text" id="msg-input" oninput="sendTypingStatus()" placeholder="write a message..." class="flex-1 min-w-0 p-2 sm:p-4 glass-input rounded-full outline-none text-xs sm:text-sm placeholder:text-white/30 shadow-inner">
+                    <textarea id="msg-input" oninput="sendTypingStatus()" placeholder="write a message..." class="flex-1 min-w-0 p-2 sm:p-4 glass-input rounded-xl outline-none text-xs sm:text-sm placeholder:text-white/30 shadow-inner resize-none" rows="1">
+                    </textarea>
                     <button id="mic-btn" onclick="toggleVoiceRecording()" class="p-2 sm:p-3 text-white/50 hover:text-teal-300 transition bg-white/5 rounded-full backdrop-blur-sm hover:bg-teal-500/10 flex-shrink-0">
                         <i class="fas fa-microphone text-lg sm:text-xl"></i>
                     </button>
@@ -588,38 +1141,48 @@ body.chat-active #chat-area {
                 <h3 id="call-user-name" class="text-lg font-semibold">Connecting...</h3>
                 <p id="call-status" class="text-xs text-teal-400 animate-pulse">Ringing</p>
             </div>
+
+            <!-- Minimize button -->
+        <button onclick="minimizeCall()" class="absolute top-2 right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white/70 hover:text-white">
+            <i class="fas fa-window-minimize text-xs"></i>
+        </button>
         </div>
 
         <!-- Call controls -->
         <div class="flex gap-4 mt-4 p-4 bg-black/30 backdrop-blur-xl rounded-2xl border border-white/10">
             <!-- Mute button -->
             <button id="mute-btn" onclick="toggleMute()" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-2xl text-white/80 hover:bg-white/20 hover:text-white hover:scale-110 transition-all">
-                <i class="fas fa-microphone"></i>
+                <i class="fas fa-microphone text-sm"></i>
             </button>
             
             <!-- Video toggle button -->
             <button id="video-btn" onclick="toggleVideo()" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-2xl text-white/80 hover:bg-white/20 hover:text-white hover:scale-110 transition-all">
-                <i class="fas fa-video"></i>
+                <i class="fas fa-video text-sm"></i>
             </button>
             
             <!-- Answer button (only shows for incoming calls) -->
             <button id="answer-btn" onclick="answerCall()" class="hidden w-10 h-10 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full flex items-center justify-center text-2xl text-white shadow-xl hover:scale-110 transition-all">
-                <i class="fas fa-phone"></i>
+                <i class="fas fa-phone text-sm"></i>
             </button>
             
             <!-- Hangup button (always visible) -->
             <button id="hangup-btn" onclick="endCall()" class="w-10 h-10 bg-gradient-to-r from-red-600 to-rose-600 rounded-full flex items-center justify-center text-2xl text-white shadow-xl hover:scale-110 transition-all">
-                <i class="fas fa-phone-slash"></i>
+                <i class="fas fa-phone-slash text-sm"></i>
             </button>
             
             <!-- Speaker button -->
             <button id="speaker-btn" onclick="toggleSpeaker()" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-2xl text-white/80 hover:bg-white/20 hover:text-white hover:scale-110 transition-all">
-                <i class="fas fa-volume-up"></i>
+                <i class="fas fa-volume-up text-sm"></i>
             </button>
+
+             <!-- Expand button -->
+            <button onclick="expandCall()" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-white/80 hover:bg-white/20">
+            <i class="fas fa-expand text-sm"></i>
+        </button>
             
             <!-- Fullscreen button -->
             <button id="fullscreen-btn" onclick="toggleFullscreen()" class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-2xl text-white/80 hover:bg-white/20 hover:text-white hover:scale-110 transition-all">
-                <i class="fas fa-expand"></i>
+                <i class="fas fa-expand-alt text-sm"></i>
             </button>
         </div>
         
@@ -628,9 +1191,120 @@ body.chat-active #chat-area {
     </div>
 </div>
 
+<!-- NOTIFICATION MODAL -->
+ <!-- Notifications Settings Modal -->
+<div id="notifications-modal" class="hidden fixed inset-0 z-[4000] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);">
+    <div class="bg-[#1E2F38] rounded-2xl shadow-2xl border border-white/10 w-full max-w-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-teal-600 to-emerald-600 p-4 text-center">
+            <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-white/20 flex items-center justify-center">
+                <i class="fas fa-bell text-2xl text-white"></i>
+            </div>
+            <h3 class="text-white font-bold text-lg">Permissions & Notifications</h3>
+            <p class="text-white/70 text-xs">Manage app access</p>
+        </div>
+        
+        <!-- Options -->
+        <div class="p-4 space-y-4">
+            <!-- Camera Permission -->
+            <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                        <i class="fas fa-video text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-medium">Camera</h4>
+                        <p class="text-white/40 text-xs">For video calls</p>
+                    </div>
+                </div>
+                <button id="camera-permission-btn" onclick="requestCameraPermission()" class="px-4 py-2 bg-teal-600 rounded-full text-white text-sm font-medium">
+                    Allow
+                </button>
+            </div>
+            
+            <!-- Microphone Permission -->
+            <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                        <i class="fas fa-microphone text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-medium">Microphone</h4>
+                        <p class="text-white/40 text-xs">For voice calls & recording</p>
+                    </div>
+                </div>
+                <button id="mic-permission-btn" onclick="requestMicrophonePermission()" class="px-4 py-2 bg-teal-600 rounded-full text-white text-sm font-medium">
+                    Allow
+                </button>
+            </div>
+            
+            <!-- Notifications Permission -->
+            <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                        <i class="fas fa-bell text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-medium">Notifications</h4>
+                        <p class="text-white/40 text-xs">Message alerts</p>
+                    </div>
+                </div>
+                <button id="notifications-permission-btn" onclick="requestNotificationPermission()" class="px-4 py-2 bg-teal-600 rounded-full text-white text-sm font-medium">
+                    Allow
+                </button>
+            </div>
+            
+            <!-- Sound Settings -->
+            <div class="border-t border-white/10 my-2"></div>
+            
+            <!-- Sound Toggle -->
+            <div class="flex items-center justify-between p-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                        <i class="fas fa-volume-up text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-medium">Sound</h4>
+                        <p class="text-white/40 text-xs">Play sounds for messages</p>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="sound-toggle" class="sr-only peer" checked onchange="toggleSound()">
+                    <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                </label>
+            </div>
+            
+            <!-- Vibration Toggle -->
+            <div class="flex items-center justify-between p-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                        <i class="fas fa-mobile-alt text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-white font-medium">Vibration</h4>
+                        <p class="text-white/40 text-xs">Vibrate on new messages</p>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="vibration-toggle" class="sr-only peer" checked onchange="toggleVibration()">
+                    <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Close button -->
+        <div class="p-4 border-t border-white/5">
+            <button onclick="closeNotificationsModal()" class="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-medium transition">
+                <i class="fas fa-times mr-2"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
+
+
 <script>
     // ===== CORE CONFIGURATION =====
-    const API_URL = "https://script.google.com/macros/s/AKfycbyApGDpe3VVqOD-AKwqrrTFXcpQxhj_6bWfI1-KkV55wHc2g1epVgNpsGInuXuRnOt1/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbyu4Fm5K5s7jykyFGFPDdtVPZycHffmsL-Dxbr2XWBlp8w3xL50hRTfwaRsO_kXvhQe/exec"; 
     const CLOUD_NAME = "dprnytwp9";
     const UPLOAD_PRESET = "AppPortal-Chat";
 
@@ -645,6 +1319,7 @@ body.chat-active #chat-area {
     let replyingTo = null; // Store message being replied to
     let contextMenuMessage = null; // For long-press menu
     let contextMenuTimer = null;
+    let enterToSend = false;
 
     // ===== CALL SYSTEM VARIABLES =====
     const ringtone = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
@@ -653,6 +1328,7 @@ body.chat-active #chat-area {
     let peer = null;
     let myPeerId = null;
     let callRejected = false;
+    let callAlertShown = false;
     let callState = {
         currentCall: null,
         incomingCall: null,
@@ -724,6 +1400,22 @@ body.chat-active #chat-area {
         else showAlert("Login Failed", res.error, "fa-exclamation-triangle text-red-500");
     }
 
+    // Login form Enter key handler
+document.getElementById('login-pass').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        handleLogin();
+    }
+});
+
+// Optional: Also trigger from email field
+document.getElementById('login-email').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('login-pass').focus(); // Move to password field
+    }
+});
+
     async function validate() {
         if (!sessionToken) return;
         
@@ -760,6 +1452,8 @@ async function refreshUserList() {
     const lastMessagesRes = await apiRequest('getLastMessages', {});
     console.log('Raw lastMessages response:', JSON.stringify(lastMessagesRes));
 
+    
+
     // Create a map of last messages
     const lastMessagesMap = {};
 if (lastMessagesRes.success) {
@@ -791,9 +1485,24 @@ if (lastMessagesRes.success) {
         unreadRes.messages.forEach(m => { counts[m[1]] = (counts[m[1]] || 0) + 1; });
     }
 
-    document.getElementById('user-list').innerHTML = usersRes.users
-        .filter(u => u.email !== myEmail)
-        .map(u => {
+    // Filter users first
+let filteredUsers = usersRes.users.filter(u => u.email !== myEmail);
+
+// Sort by most recent message timestamp (sent or received)
+filteredUsers.sort((a, b) => {
+    // Get last message timestamps from lastMessagesRes
+    const aLastMsg = lastMessagesRes.messages?.find(msg => msg.sender === a.email)?.timestamp || a.lastActive || 0;
+    const bLastMsg = lastMessagesRes.messages?.find(msg => msg.sender === b.email)?.timestamp || b.lastActive || 0;
+    
+    // Convert to timestamps for comparison
+    const aTime = aLastMsg ? new Date(aLastMsg).getTime() : 0;
+    const bTime = bLastMsg ? new Date(bLastMsg).getTime() : 0;
+    
+    return bTime - aTime; // Most recent first
+});
+
+// Now render the sorted list
+document.getElementById('user-list').innerHTML = filteredUsers.map(u => {
             const escapedName = (u.name || '').replace(/'/g, "\\'");
             const escapedPic = (u.profilePic || '').replace(/'/g, "\\'");
             const unreadCount = counts[u.email] || 0;
@@ -813,6 +1522,31 @@ if (lastMessagesRes.success) {
                 else if (diffDays < 7) lastActiveTime = `${diffDays}d ago`;
                 else lastActiveTime = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
             }
+
+            
+        // Get last message timestamp if exists
+        const lastMsg = lastMessagesRes.messages?.find(msg => msg.sender === u.email);
+        let lastMsgTime = '';
+
+        if (lastMsg) {
+            const msgDate = new Date(lastMsg.timestamp);
+            const now = new Date();
+            const diffMs = now - msgDate;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) lastMsgTime = 'now';
+            else if (diffMins < 60) lastMsgTime = `${diffMins}m ago`;
+            else if (diffHours < 24) lastMsgTime = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            else if (diffDays === 1) lastMsgTime = 'yesterday';
+            else if (diffDays < 7) lastMsgTime = msgDate.toLocaleDateString([], { weekday: 'long' });
+            else if (diffDays < 365) lastMsgTime = msgDate.toLocaleDateString([], { day: 'numeric', month: 'short' });
+            else lastMsgTime = msgDate.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        // Use lastMsgTime if available, otherwise fall back to lastActiveTime
+        const timeToShow = lastMsgTime || lastActiveTime;
 
             const isOnline = u.lastActive && (new Date() - parseLastActive(u.lastActive)) < 120000;
             const onlineDotColor = isOnline ? 'bg-emerald-500' : 'bg-gray-400';
@@ -836,7 +1570,7 @@ if (lastMessagesRes.success) {
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <h3 class="contact-name text-sm">${u.name.split(' ')[0]}</h3>
-                                <span class="timestamp text-[0.65rem] font-light">${lastActiveTime}</span>
+                                <span class="timestamp text-[0.65rem] font-light">${timeToShow}</span>
                             </div>
                             <div class="flex items-center justify-between mt-0.5">
                                 <p class="last-message truncate pr-2">
@@ -1036,7 +1770,6 @@ if (lastMessagesRes.success) {
 
     // ===== SETTINGS =====
     async function openSettings() {
-        if (activeContact) return;
         
         document.getElementById('settings-avatar-preview').innerHTML = getAvatarHTML(currentUser.name, currentUser.profilePic, "w-24 h-24 text-2xl");
         document.getElementById('settings-name-input').value = currentUser.name;
@@ -1270,9 +2003,29 @@ if (lastMessagesRes.success) {
         
         // Create message content - USE messageContent consistently
         let messageContent = safeBody;
-        if (mime.includes('image')) messageContent = `<img src="${body}" class="media-content rounded-xl cursor-pointer shadow-lg" onclick="window.open('${body}')">`;
+        if (mime.includes('image')) messageContent = `<img src="${body}" class="media-content rounded-xl cursor-pointer shadow-lg" style="max-width: min(300px, 70vw); max-height: min(400px, 60vh); width: auto; height: auto; object-fit: contain;" onclick="window.open('${body}')">`;
         else if (mime.includes('video')) messageContent = `<video controls class="media-content rounded-xl shadow-lg"><source src="${body}"></video>`;
-        else if (mime.includes('audio')) messageContent = `<audio controls class="w-48 h-8 mt-1"><source src="${body}"></audio>`;
+        else if (mime.includes('audio')) messageContent = `
+<div class="audio-player-glass">
+    <button class="audio-play-btn" onclick="toggleAudio(this, '${body}')">
+        <i class="fas fa-play"></i>
+    </button>
+    
+    <div class="audio-progress-container">
+        <div class="audio-progress-bar" onclick="seekAudio(event, this)">
+            <div class="audio-progress-fill" style="width: 0%"></div>
+        </div>
+        
+        <div class="audio-waveform">
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        
+        <div class="audio-time">
+            <span class="current-time">0:00</span>
+            <span class="duration">0:00</span>
+        </div>
+    </div>
+</div>`;
         else if (body && typeof body === 'string' && body.startsWith('http')) messageContent = `<a href="${body}" target="_blank" class="bg-teal-800/40 flex items-center gap-2 text-sm underline italic text-teal-100 p-2 rounded-xl"><i class="fas fa-file-download"></i> Attachment</a>`;
         
         // Message data for context menu
@@ -1403,6 +2156,21 @@ if (res.success) {
     function showUserList() {
         document.body.classList.remove('chat-active');
         document.getElementById('chat-area').classList.remove('active');
+
+         // Make sure user list is visible and call logs hidden
+    document.getElementById('user-list').style.display = 'block';
+    document.getElementById('call-logs-container').style.display = 'none';
+    
+    // Reset menu active state to Chats
+    document.querySelectorAll('#bottom-menu button').forEach(btn => {
+        btn.classList.remove('text-teal-400');
+        btn.classList.add('text-white/60');
+    });
+    const chatsBtn = document.querySelector('#bottom-menu button:first-child');
+    if (chatsBtn) {
+        chatsBtn.classList.remove('text-white/60');
+        chatsBtn.classList.add('text-teal-400');
+    }
     }
 
     // Show context menu on long press or right click
@@ -1502,6 +2270,153 @@ function jumpToMessage(messageId) {
     }
 }
 
+// ===== HELPERS & LOOPS =====
+    function handleFileSelection(i) {
+        selectedFile = i.files[0];
+        if(!selectedFile) return;
+
+        if (activeContact) {
+        fileDrafts[activeContact] = {
+            file: selectedFile,
+            name: selectedFile.name,
+            size: selectedFile.size,
+            type: selectedFile.type
+        };
+    }
+        document.getElementById('media-preview').classList.remove('hidden');
+        document.getElementById('preview-name').innerText = selectedFile.name;
+        document.getElementById('preview-size').innerText = (selectedFile.size/1024).toFixed(1) + " KB";
+        document.getElementById('preview-icon').innerHTML = '<i class="fas fa-file-arrow-up"></i>';
+    }
+    
+    function clearPreview() { 
+        selectedFile = null; 
+        document.getElementById('media-preview').classList.add('hidden'); 
+    }
+    
+    function handleLogout() { 
+        localStorage.removeItem('chat_token');  
+        resetToMyProfile(); 
+        location.reload(); 
+    }
+
+    function sendTypingStatus() {
+        if (!activeContact) return;
+        apiRequest('setTyping', { isTyping: true, typingTo: activeContact });
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => apiRequest('setTyping', { isTyping: false, typingTo: activeContact }), 2000);
+    }
+    
+    function closeSettings() { 
+        document.getElementById('settings-modal').style.display = 'none'; 
+    }
+    
+    function startLoops() {
+        apiRequest('heartbeat', {}); 
+        refreshUserList(); 
+        refreshStatusUI();
+        
+        setInterval(() => apiRequest('heartbeat', {}), 60000);
+        setInterval(refreshUserList, 5000);
+        setInterval(() => { if (activeContact) {refreshChatHistory(); if (document.getElementById('chat-area').classList.contains('active')) { apiRequest('markAsRead', { contactEmail: activeContact }); } } updateTypingIndicator(); }, 3000);
+        setInterval(refreshStatusUI, 5000);
+        setInterval(() => { if (currentUserEmail) { apiRequest('markMessagesAsDelivered', {}); } }, 3000);
+    }
+
+    function saveDraft() {
+    if (!activeContact) return;
+    const msgInput = document.getElementById('msg-input');
+    drafts[activeContact] = msgInput.value;
+}
+
+// Add this to your input Event listener
+document.getElementById('msg-input').addEventListener('input', saveDraft);
+
+document.getElementById('msg-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+document.getElementById('msg-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && enterToSend) {
+        e.preventDefault();
+        processMessageSend();
+        this.style.height = 'auto';
+    }
+});
+
+function toggleEnterToSend() {
+    enterToSend = !enterToSend;
+    showAlert('Enter to Send', enterToSend ? 'ON - Enter sends' : 'OFF - Enter = new line');
+}
+
+
+  // Audio player functions
+function toggleAudio(btn, src) {
+    const player = btn.closest('.audio-player-glass');
+    const icon = btn.querySelector('i');
+    const progressFill = player.querySelector('.audio-progress-fill');
+    const currentTimeEl = player.querySelector('.current-time');
+    const durationEl = player.querySelector('.duration');
+    
+    // Check if there's an audio element
+    let audio = player.querySelector('audio');
+    
+    if (!audio) {
+        // Create hidden audio element
+        audio = document.createElement('audio');
+        audio.src = src;
+        audio.preload = 'metadata';
+        audio.style.display = 'none';
+        player.appendChild(audio);
+        
+        // Set up audio events
+        audio.addEventListener('loadedmetadata', () => {
+            durationEl.textContent = formatTime(audio.duration);
+        });
+        
+        audio.addEventListener('timeupdate', () => {
+            const progress = (audio.currentTime / audio.duration) * 100;
+            progressFill.style.width = progress + '%';
+            currentTimeEl.textContent = formatTime(audio.currentTime);
+        });
+        
+        audio.addEventListener('ended', () => {
+            icon.className = 'fas fa-play';
+            progressFill.style.width = '0%';
+            currentTimeEl.textContent = '0:00';
+        });
+    }
+    
+    // Toggle play/pause
+    if (audio.paused) {
+        audio.play();
+        icon.className = 'fas fa-pause';
+    } else {
+        audio.pause();
+        icon.className = 'fas fa-play';
+    }
+}
+
+function seekAudio(event, bar) {
+    const player = bar.closest('.audio-player-glass');
+    const audio = player.querySelector('audio');
+    if (!audio) return;
+    
+    const rect = bar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const width = rect.width;
+    const seekTime = (clickX / width) * audio.duration;
+    audio.currentTime = seekTime;
+}
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+
     // ===== CALL SYSTEM =====
     function initCallSystem() {
     if (peer) return;
@@ -1518,11 +2433,15 @@ function jumpToMessage(messageId) {
 
             if (msg.type === 'call-rejected') {
             console.log("Call was rejected");
-            showAlert("Call Declined", "The User declined your call");
+            if (!callAlertShown) {
+        callAlertShown = true;
+            showAlert("Call Declined", "The User declined your call");}
             performLocalCleanup();
         } else if (msg.type === 'no-answer') {
             console.log("Call was not answered");
-            showAlert("No Answer", "The User did not answer");
+            if (!callAlertShown) {
+        callAlertShown = true;
+            showAlert("No Answer", "The User did not answer");}
             performLocalCleanup();
         } else if (msg.type === 'call-cancelled') {
             console.log("Call was cancelled");
@@ -1624,6 +2543,7 @@ function setupPeer() {
 }
 
     async function initiateCall(videoEnabled) {
+        callAlertShown = false;
     if (!peer) {
         showAlert("Error", "Call system not ready. Please wait a moment and try again.");
         return;
@@ -1681,7 +2601,16 @@ function setupPeer() {
                 console.log("No answer timeout triggered");
                 callState.noAnswer = true;
                 callState.callEnded = true;
-                showAlert("No Answer", `${contactName} did not answer`);
+
+                // Force call modal to show the alert
+        if (!document.getElementById('call-modal').classList.contains('floating')) {
+            // Make sure modal is visible to show alert
+            document.getElementById('call-modal').style.display = 'flex';
+        }
+        // Only show alert if not already shown
+        if (!callAlertShown) {
+            callAlertShown = true;
+                showAlert("No Answer", `${contactName} did not answer`);}
                 endCall();
             }
         }, 15000); // 15 seconds for no answer
@@ -1732,6 +2661,7 @@ function setupPeer() {
 }
 
     async function answerCall() {
+        callAlertShown = false;
         if (!callState.incomingCall) return;
         
         try {
@@ -1888,6 +2818,24 @@ function setupPeer() {
     ringtone.pause();
     ringtone.currentTime = 0;
 
+     // Log the call before cleanup
+    if (callState.callStartTime && (callState.callPeerId || callState.incomingCall)) {
+        const duration = Math.floor((Date.now() - callState.callStartTime) / 1000);
+        let status = 'completed';
+        const caller = callState.isOutgoing ? currentUserEmail : (callState.callPeerId || callState.incomingCall?.peer);
+        const receiver = callState.isOutgoing ? (callState.callPeerId || callState.incomingCall?.peer) : currentUserEmail;
+        
+        if (callState.noAnswer) status = 'missed';
+        else if (!callState.callAnswered) status = 'rejected';
+        
+        apiRequest('logCall', {
+            caller: caller,
+            receiver: receiver,
+            status: status,
+            duration: duration.toString()
+        });
+    }
+
     // 1. Identify who to signal
     const targetId = callState.callPeerId || (callState.incomingCall ? callState.incomingCall.peer : null);
 
@@ -1956,7 +2904,11 @@ function performLocalCleanup() {
     callState.callPeerId = null;
 
     // Reset UI
-    document.getElementById('call-modal').style.display = 'none';
+    const callModal = document.getElementById('call-modal');
+    if (callModal) {
+    callModal.classList.remove('floating');
+    callModal.style.display = 'none'; }
+    
     document.getElementById('remote-video').srcObject = null;
     document.getElementById('local-video').srcObject = null;
     console.log("Local call state cleaned up.");
@@ -2052,67 +3004,16 @@ function performLocalCleanup() {
         if (timerElement) timerElement.remove();
     }
 
-    // ===== HELPERS & LOOPS =====
-    function handleFileSelection(i) {
-        selectedFile = i.files[0];
-        if(!selectedFile) return;
-
-        if (activeContact) {
-        fileDrafts[activeContact] = {
-            file: selectedFile,
-            name: selectedFile.name,
-            size: selectedFile.size,
-            type: selectedFile.type
-        };
-    }
-        document.getElementById('media-preview').classList.remove('hidden');
-        document.getElementById('preview-name').innerText = selectedFile.name;
-        document.getElementById('preview-size').innerText = (selectedFile.size/1024).toFixed(1) + " KB";
-        document.getElementById('preview-icon').innerHTML = '<i class="fas fa-file-arrow-up"></i>';
-    }
-    
-    function clearPreview() { 
-        selectedFile = null; 
-        document.getElementById('media-preview').classList.add('hidden'); 
-    }
-    
-    function handleLogout() { 
-        localStorage.removeItem('chat_token');  
-        resetToMyProfile(); 
-        location.reload(); 
-    }
-
-    function sendTypingStatus() {
-        if (!activeContact) return;
-        apiRequest('setTyping', { isTyping: true, typingTo: activeContact });
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => apiRequest('setTyping', { isTyping: false, typingTo: activeContact }), 2000);
-    }
-    
-    function closeSettings() { 
-        document.getElementById('settings-modal').style.display = 'none'; 
-    }
-    
-    function startLoops() {
-        apiRequest('heartbeat', {}); 
-        refreshUserList(); 
-        refreshStatusUI();
-        
-        setInterval(() => apiRequest('heartbeat', {}), 60000);
-        setInterval(refreshUserList, 5000);
-        setInterval(() => { if (activeContact) {refreshChatHistory(); if (document.getElementById('chat-area').classList.contains('active')) { apiRequest('markAsRead', { contactEmail: activeContact }); } } updateTypingIndicator(); }, 3000);
-        setInterval(refreshStatusUI, 5000);
-        setInterval(() => { if (currentUserEmail) { apiRequest('markMessagesAsDelivered', {}); } }, 3000);
-    }
-
-    function saveDraft() {
-    if (!activeContact) return;
-    const msgInput = document.getElementById('msg-input');
-    drafts[activeContact] = msgInput.value;
+    function minimizeCall() {
+    // Keep call active but hide main modal
+    document.getElementById('call-modal').classList.add('floating');
+    // Show a small pip window instead
 }
 
-// Add this to your input event listener
-document.getElementById('msg-input').addEventListener('input', saveDraft);
+function expandCall() {
+    document.getElementById('call-modal').classList.remove('floating');
+    // Return to fullscreen mode
+}
 
 
 // Camera switching variables
@@ -2397,6 +3298,251 @@ function adjustVideoQuality() {
         }
     }
 }
+
+function showCallLogs() {
+    // Hide user list, show call logs
+    document.getElementById('user-list').style.display = 'none';
+    document.getElementById('call-logs-container').style.display = 'block';
+    document.getElementById('bottom-menu').classList.add('bg-[#0F1F28]');
+    
+    // Update active menu item
+    document.querySelectorAll('#bottom-menu button').forEach(btn => {
+        btn.classList.remove('text-teal-400');
+        btn.classList.add('text-white/60');
+    });
+    event.currentTarget.classList.remove('text-white/60');
+    event.currentTarget.classList.add('text-teal-400');
+    
+    // Load call logs
+    loadCallLogs();
+}
+
+async function loadCallLogs() {
+    const res = await apiRequest('getCallLogs', {});
+    
+    if (res.success && res.logs && res.logs.length > 0) {
+        const container = document.getElementById('call-logs-container');
+        
+        // Group by date
+        let lastDate = '';
+        let html = '';
+        
+        res.logs.forEach(log => {
+            const logDate = new Date(log.timestamp).toDateString();
+            const today = new Date().toDateString();
+            const yesterday = new Date(Date.now() - 86400000).toDateString();
+            
+            i// Date header
+            if (logDate !== lastDate) {
+                let dateDisplay = '';
+                if (logDate === today) {
+                    dateDisplay = 'Today';
+                } else if (logDate === yesterday) {
+                    dateDisplay = 'Yesterday';
+                } else {
+                    dateDisplay = new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+                html += `<div class="text-xs text-white/40 my-4 px-2">${dateDisplay}</div>`;
+                lastDate = logDate;
+            }
+            
+            // Determine call icon based on type/status
+            let icon = 'fa-phone-alt';
+            let iconColor = 'text-teal-400';
+            let statusText = '';
+            
+            if (log.status === 'missed') {
+                icon = 'fa-phone-slash';
+                iconColor = 'text-red-400';
+                statusText = 'Missed call';
+            } else if (log.type === 'outgoing') {
+                icon = 'fa-phone';
+                iconColor = 'text-teal-400';
+                statusText = 'Outgoing call';
+            } else if (log.type === 'incoming') {
+                icon = 'fa-phone-alt';
+                iconColor = 'text-green-400';
+                statusText = 'Incoming call';
+            }
+
+             // Format duration
+            let durationText = '';
+            if (log.duration && log.duration !== '0' && log.status === 'completed') {
+                const seconds = parseInt(log.duration);
+                if (seconds < 60) {
+                    durationText = `${seconds} sec`;
+                } else {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    durationText = `${mins}:${secs.toString().padStart(2, '0')} min`;
+                }
+            } else {
+                durationText = statusText;
+            }
+            
+            html += `
+                <div class="flex items-center gap-3 py-3 border-b border-white/5 hover:bg-white/5 transition cursor-pointer" onclick="selectContact('${log.contactEmail}', '${log.contactName}', '${log.profilePic}', '')">
+                    <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${iconColor}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-white font-medium">${log.contactName}</h4>
+                        <p class="text-xs text-white/40">
+                            <i class="fas ${log.status === 'outgoing' ? 'fa-arrow-up' : 'fa-arrow-down'} mr-1"></i>
+                            ${durationText}
+                        </p>
+                    </div>
+                    <span class="text-xs text-white/30">${new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+}
+
+function openMoreMenu() {
+    const avatar = document.getElementById('more-menu-avatar');
+    const nameEl = document.getElementById('more-menu-name');
+    
+    // Set avatar
+    if (currentUser.profilePic) {
+        avatar.innerHTML = `<img src="${currentUser.profilePic}" class="w-full h-full rounded-full object-cover">`;
+    } else {
+        avatar.innerHTML = currentUser.name ? currentUser.name[0].toUpperCase() : 'U';
+    }
+    
+    // Set name
+    nameEl.innerText = currentUser.name || 'User';
+
+    document.getElementById('more-menu').classList.remove('hidden');
+}
+
+function closeMoreMenu() {
+    document.getElementById('more-menu').classList.add('hidden');
+}
+
+// Placeholder functions for future settings
+function openTheme() {
+    showAlert('Theme Settings', 'Coming soon!');
+}
+
+function openPrivacy() {
+    showAlert('Privacy Settings', 'Coming soon!');
+}
+
+function openHelp() {
+    showAlert('Help & Support', 'Coming soon!');
+}
+
+// Open notifications settings
+function openNotifications() {
+    closeMoreMenu();
+    setTimeout(() => {
+        document.getElementById('notifications-modal').classList.remove('hidden');
+        checkPermissionStatus();
+    }, 100);
+}
+
+function closeNotificationsModal() {
+    document.getElementById('notifications-modal').classList.add('hidden');
+}
+
+// Check current permission status
+async function checkPermissionStatus() {
+    // Camera
+    try {
+        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true })
+            .catch(() => null);
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            updateButton('camera-permission-btn', 'Granted', 'bg-green-600');
+        }
+    } catch (e) {
+        updateButton('camera-permission-btn', 'Allow', 'bg-teal-600');
+    }
+    
+    // Microphone
+    try {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            .catch(() => null);
+        if (micStream) {
+            micStream.getTracks().forEach(track => track.stop());
+            updateButton('mic-permission-btn', 'Granted', 'bg-green-600');
+        }
+    } catch (e) {
+        updateButton('mic-permission-btn', 'Allow', 'bg-teal-600');
+    }
+    
+    // Notifications
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+            updateButton('notifications-permission-btn', 'Granted', 'bg-green-600');
+        } else {
+            updateButton('notifications-permission-btn', 'Allow', 'bg-teal-600');
+        }
+    }
+}
+
+function updateButton(id, text, color) {
+    const btn = document.getElementById(id);
+    if (btn) {
+        btn.textContent = text;
+        btn.className = `px-4 py-2 ${color} rounded-full text-white text-sm font-medium`;
+    }
+}
+
+// Request permissions
+async function requestCameraPermission() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+        updateButton('camera-permission-btn', 'Granted', 'bg-green-600');
+        showAlert('Success', 'Camera access granted');
+    } catch (err) {
+        showAlert('Error', 'Camera permission denied');
+    }
+}
+
+async function requestMicrophonePermission() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        updateButton('mic-permission-btn', 'Granted', 'bg-green-600');
+        showAlert('Success', 'Microphone access granted');
+    } catch (err) {
+        showAlert('Error', 'Microphone permission denied');
+    }
+}
+
+function requestNotificationPermission() {
+    if ('Notification' in window) {
+        Notification.requestPermission().then(perm => {
+            if (perm === 'granted') {
+                updateButton('notifications-permission-btn', 'Granted', 'bg-green-600');
+                showAlert('Success', 'Notifications enabled');
+            }
+        });
+    }
+}
+
+// Sound and vibration toggles
+let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+let vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false';
+
+document.getElementById('sound-toggle').checked = soundEnabled;
+document.getElementById('vibration-toggle').checked = vibrationEnabled;
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('soundEnabled', soundEnabled);
+}
+
+function toggleVibration() {
+    vibrationEnabled = !vibrationEnabled;
+    localStorage.setItem('vibrationEnabled', vibrationEnabled);
+}
+
 </script>
 </body>
 </html>
