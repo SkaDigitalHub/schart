@@ -742,7 +742,19 @@ body.chat-active #chat-area {
     }
 }
 
+/* Make reply preview properly clickable on mobile */
+.reply-preview {
+    position: relative;
+    z-index: 10;
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: transparent;
+}
 
+/* Ensure parent doesn't steal taps */
+.message-bubble {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
     </style>
 </head>
 <body class="antialiased">
@@ -1995,8 +2007,9 @@ document.getElementById('user-list').innerHTML = filteredUsers.map(u => {
             }
             
             replyHtml = `
-                <div class="text-xs opacity-70 mb-1 pb-1 border-l-2 border-teal-400 pl-2 truncate cursor-pointer hover:bg-teal-500/10 transition rounded"
-         onclick="event.stopPropagation(); jumpToMessage('${replyToId}')">
+                <div class="reply-preview text-xs opacity-70 mb-1 pb-1 border-l-2 border-teal-400 pl-2 truncate cursor-pointer hover:bg-teal-500/10 transition rounded"
+     onclick="jumpToMessage('${replyToId}')"
+     ontouchstart="event.stopPropagation()">
                     <span class="font-bold text-teal-300">↪ ${replySender}</span>: ${replyText}
                 </div>
             `;
@@ -2247,6 +2260,7 @@ function cancelReply() {
  let touchTimer = null;
 
 function handleTouchStart(event, messageData) {
+    if (event.target.closest('.reply-preview')) return;
     event.preventDefault();
     touchTimer = setTimeout(() => {
         showMessageContext(event, messageData);
